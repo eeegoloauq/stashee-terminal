@@ -2,69 +2,58 @@
 
 # stashee
 
-**A glass tiling terminal workspace for Linux — shells never die by accident.**
+A glass-styled tiling terminal workspace for Linux.
 
 <img src="docs/shots/welcome.png" alt="stashee on first launch" width="85%">
 
-<br>
+</div>
 
-Terminals live in named **workflows** and tile themselves.
-Every pane runs inside tmux, so closing the app **stashes** a workflow
-instead of killing it — reopen, and every shell is back exactly where
-it was.
+Terminals are grouped into named **workflows** and tile automatically.
+Every pane runs inside a tmux session, so closing the app **stashes** a
+workflow instead of killing it. Reopen, and every shell is back exactly
+where it was.
 
-<br>
-
-<br>
-
-<img src="docs/shots/agents.png" alt="two Claude Code agents in a stashed workflow" width="85%">
-
-*Two coding agents grinding away in a `dev` workflow. Close the
-window — they don't even notice.*
-
-<br>
-
+<div align="center">
+<img src="docs/shots/agents.png" alt="two coding agents in a stashed workflow" width="85%">
 </div>
 
 ## Why
 
-- **Nothing to lose.** Quit, crash, update — sessions live in tmux,
-  not in the app. The window is just a beautiful client.
-- **Zero layout management.** `Ctrl+T`, and the grid tiles itself —
-  up to three columns, then rows, always evenly split, animated.
-- **SSH panes are stashed too.** A pane on a remote host survives
-  reboots and dropped connections; even remote copy lands in your
-  local clipboard.
-- **Native and light.** Rust + GTK4 + libadwaita + VTE — the same
-  terminal engine as GNOME Terminal and Ptyxis. No Electron, no
-  webviews, no daemons of our own.
+- Sessions live in tmux, not in the app. Quitting, crashing, or
+  updating loses nothing; the window is only a client.
+- No layout management. New panes tile automatically: up to three
+  columns, then rows, always evenly split.
+- SSH panes are stashed too. A pane on a remote host survives reboots
+  and dropped connections, and remote copy lands in the local
+  clipboard.
+- Native. Rust, GTK4, libadwaita, and VTE (the terminal engine behind
+  GNOME Terminal and Ptyxis). No Electron, no webviews, no daemons.
 
-## Feel
+## Usage
 
 | | |
 |---|---|
-| `stashee work` | jump to the "work" workflow from any shell |
-| `Ctrl+T` | new pane — it finds its place |
+| `stashee work` | open the "work" workflow from any shell |
+| `Ctrl+T` | new pane |
 | `Ctrl+Shift+T` | new SSH pane |
 | `Alt+1…9` | switch workflow |
-| `Ctrl+W` | the only way a pane dies on purpose |
-| `stashee config` | every setting, one file, applied live |
+| `Ctrl+W` | close pane (the only way a pane dies on purpose) |
+| `stashee config` | open the config file; changes apply live |
 
-There is no settings GUI, no plugins, no themes gallery. The app does
-very little, very well — that's the product.
+There is no settings GUI, no plugin system, no theme gallery. The scope
+is deliberately small.
 
 ## Status
 
-**Pre-alpha.** v1 targets Fedora + GNOME/Wayland; other distros and
-compositors after that. The core is UI-agnostic by design
-(`stashee-core` has no GTK in it) — other platforms arrive later as
-thin native frontends, never a webview.
+Pre-alpha. v1 targets Fedora + GNOME/Wayland; other distros and
+compositors come later. The core crate (`stashee-core`) has no GTK
+dependency, so other platforms can follow as native frontends.
 
 ## Install
 
-Every release ships native packages on the
-[releases page](https://github.com/eeegoloauq/stashee-terminal/releases):
-an `.rpm` for Fedora and a `.pkg.tar.zst` for Arch.
+Each release on the
+[releases page](https://github.com/eeegoloauq/stashee-terminal/releases)
+ships an `.rpm` for Fedora and a `.pkg.tar.zst` for Arch.
 
 ```sh
 # Fedora
@@ -74,8 +63,8 @@ sudo dnf install ./stashee-*.rpm
 sudo pacman -U ./stashee-*.pkg.tar.zst
 ```
 
-tmux does the stashing: install it with your package manager if it is
-not there already.
+tmux is required; install it with your package manager if it is not
+already present.
 
 ## Build
 
@@ -86,8 +75,8 @@ git clone https://github.com/eeegoloauq/stashee-terminal && cd stashee-terminal
 just install        # release build → ~/.local/bin/stashee (+ st symlink)
 ```
 
-Runtime needs nothing extra on Fedora Workstation — GTK4, libadwaita
-and VTE already ship with it.
+At runtime Fedora Workstation needs nothing extra: GTK4, libadwaita,
+and VTE ship with it.
 
 ## License
 
