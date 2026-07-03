@@ -1,9 +1,7 @@
-//! Workflow sidebar: the list, an add button, and the active
-//! workflow's folder. Pure presentation — selection and clicks are
-//! forwarded through closures, and the context menu dispatches window
-//! actions (`win.rename-workflow` etc.) carrying the workflow name.
-
-use std::path::Path;
+//! Workflow sidebar: the list and an add button. Pure presentation —
+//! selection and clicks are forwarded through closures, and the
+//! context menu dispatches window actions (`win.rename-workflow` etc.)
+//! carrying the workflow name.
 
 use gtk4 as gtk;
 use gtk4::gio;
@@ -17,8 +15,6 @@ pub struct Sidebar {
     root: gtk::Box,
     list: gtk::ListBox,
     add: gtk::Button,
-    folder: gtk::Button,
-    folder_label: gtk::Label,
 }
 
 impl Sidebar {
@@ -53,34 +49,14 @@ impl Sidebar {
         add.set_margin_end(8);
         add.set_margin_bottom(8);
 
-        let folder_label = gtk::Label::new(None);
-        folder_label.set_ellipsize(gtk::pango::EllipsizeMode::Middle);
-        let folder_box = gtk::Box::new(gtk::Orientation::Horizontal, 8);
-        folder_box.set_halign(gtk::Align::Start);
-        folder_box.append(&gtk::Image::from_icon_name("folder-symbolic"));
-        folder_box.append(&folder_label);
-        let folder = gtk::Button::new();
-        folder.set_child(Some(&folder_box));
-        folder.add_css_class("flat");
-        folder.set_margin_start(8);
-        folder.set_margin_end(8);
-        folder.set_margin_bottom(8);
-
         let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
         root.add_css_class("sidebar-panel");
         root.set_size_request(200, -1);
         root.append(&heading);
         root.append(&scroll);
         root.append(&add);
-        root.append(&folder);
 
-        Self {
-            root,
-            list,
-            add,
-            folder,
-            folder_label,
-        }
+        Self { root, list, add }
     }
 
     pub fn widget(&self) -> &gtk::Box {
@@ -101,12 +77,8 @@ impl Sidebar {
         self.add.connect_clicked(move |_| f());
     }
 
-    pub fn connect_folder(&self, f: impl Fn() + 'static) {
-        self.folder.connect_clicked(move |_| f());
-    }
-
     /// Rebuild the list to mirror `workflows`; `active` drives the
-    /// selected row and the folder button.
+    /// selected row.
     pub fn refresh(&self, workflows: &[Workflow], active: &str) {
         self.list.remove_all();
         for workflow in workflows {
@@ -119,10 +91,6 @@ impl Sidebar {
             self.list.append(&row);
             if workflow.name.eq_ignore_ascii_case(active) {
                 self.list.select_row(Some(&row));
-                self.folder_label
-                    .set_text(&display_dir(&workflow.default_dir));
-                self.folder
-                    .set_tooltip_text(Some(&workflow.default_dir.display().to_string()));
             }
         }
     }
@@ -140,6 +108,7 @@ fn attach_menu(row: &gtk::ListBoxRow, name: &str, stash: bool) {
         };
         let menu = gio::Menu::new();
         menu.append_item(&action_item("Rename…", "win.rename-workflow", &name));
+        menu.append_item(&action_item("Set Folder…", "win.set-folder", &name));
         let toggle = if stash {
             "Turn off stashing"
         } else {
@@ -165,12 +134,4 @@ fn action_item(label: &str, action: &str, workflow: &str) -> gio::MenuItem {
     let item = gio::MenuItem::new(Some(label), None);
     item.set_action_and_target_value(Some(action), Some(&workflow.to_variant()));
     item
-}
-
-fn display_dir(dir: &Path) -> String {
-    match dir.strip_prefix(glib::home_dir()) {
-        Ok(rest) if rest.as_os_str().is_empty() => "~".to_owned(),
-        Ok(rest) => format!("~/{}", rest.display()),
-        Err(_) => dir.display().to_string(),
-    }
 }

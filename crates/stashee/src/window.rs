@@ -198,13 +198,21 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
     body.append(sidebar.widget());
     body.append(&content);
 
-    let title = adw::WindowTitle::new("stashee", &active);
+    let title = adw::WindowTitle::new(&active, "");
     let header = adw::HeaderBar::new();
     header.set_title_widget(Some(&title));
-    let ssh_button = gtk::Button::with_label("+ SSH");
-    ssh_button.set_action_name(Some("win.new-ssh-pane"));
-    ssh_button.set_tooltip_text(Some("New SSH pane (Ctrl+Shift+T)"));
-    header.pack_start(&ssh_button);
+    let ssh_item = gio::MenuItem::new(Some("New SSH Pane…"), Some("win.new-ssh-pane"));
+    ssh_item.set_attribute_value("accel", Some(&"<Ctrl><Shift>t".to_variant()));
+    let new_menu = gio::Menu::new();
+    new_menu.append_item(&ssh_item);
+    let new_button = adw::SplitButton::builder()
+        .icon_name("tab-new-symbolic")
+        .tooltip_text("New pane (Ctrl+T)")
+        .dropdown_tooltip("New SSH pane")
+        .menu_model(&new_menu)
+        .build();
+    new_button.set_action_name(Some("win.new-pane"));
+    header.pack_start(&new_button);
     let toolbar = adw::ToolbarView::new();
     toolbar.add_top_bar(&header);
     toolbar.set_content(Some(&body));
@@ -263,11 +271,6 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
             .connect_add(move || add_workflow_dialog(&for_add));
     }
     {
-        let for_folder = ctx.clone();
-        ctx.sidebar.connect_folder(move || pick_folder(&for_folder));
-    }
-
-    {
         let ctx = ctx.clone();
         window.connect_map(move |_| focus_active_pane(&ctx));
     }
@@ -324,6 +327,17 @@ fn install_actions(ctx: &Rc<Ctx>, window: &adw::ApplicationWindow) {
         action.connect_activate(move |_, parameter| {
             if let Some(name) = parameter.and_then(glib::Variant::get::<String>) {
                 rename_workflow_dialog(&ctx, &name);
+            }
+        });
+    }
+    window.add_action(&action);
+
+    let action = gio::SimpleAction::new("set-folder", Some(glib::VariantTy::STRING));
+    {
+        let ctx = ctx.clone();
+        action.connect_activate(move |_, parameter| {
+            if let Some(name) = parameter.and_then(glib::Variant::get::<String>) {
+                pick_folder(&ctx, &name);
             }
         });
     }
@@ -502,7 +516,7 @@ fn switch_to(ctx: &Rc<Ctx>, name: &str) {
     };
     *ctx.active.borrow_mut() = name.clone();
     ctx.state.borrow_mut().last_active = Some(name.clone());
-    ctx.title.set_subtitle(&name);
+    ctx.title.set_title(&name);
     ctx.content.set_visible_child(&stack);
     sync_sidebar(ctx);
     save(ctx);
@@ -610,7 +624,7 @@ fn add_pane(ctx: &Rc<Ctx>, spec: PaneSpec) {
     terminal.grab_focus();
 }
 
-/// The "+ SSH" prompt: a host entry with recent-hosts suggestions
+/// The "New SSH Pane" prompt: a host entry with recent-hosts suggestions
 /// (SPEC.md "SSH panes"). Activating a suggestion connects right away.
 fn ssh_host_dialog(ctx: &Rc<Ctx>) {
     let entry = gtk::Entry::new();
@@ -979,7 +993,7 @@ fn apply_rename(ctx: &Rc<Ctx>, old: &str, new: &str) {
     if ctx.active.borrow().eq_ignore_ascii_case(old) {
         *ctx.active.borrow_mut() = new.to_owned();
         ctx.state.borrow_mut().last_active = Some(new.to_owned());
-        ctx.title.set_subtitle(new);
+        ctx.title.set_title(new);
     }
     sync_sidebar(ctx);
     save(ctx);
@@ -1130,17 +1144,27 @@ fn apply_delete(ctx: &Rc<Ctx>, name: &str) {
     save(ctx);
 }
 
-fn pick_folder(ctx: &Rc<Ctx>) {
-    let Some(workflow) = current_workflow(ctx) else {
+/// "Set Folder…" from a workflow's context menu: pick the directory
+/// new panes of that workflow open in.
+fn pick_folder(ctx: &Rc<Ctx>, name: &str) {
+    let Some(workflow) = ctx
+        .state
+        .borrow()
+        .workflows
+        .iter()
+        .find(|wf| wf.name.eq_ignore_ascii_case(name))
+        .cloned()
+    else {
         return;
     };
     let dialog = gtk::FileDialog::builder()
-        .title("Workflow folder")
+        .title(format!("Folder for “{name}”"))
         .modal(true)
         .build();
     dialog.set_initial_folder(Some(&gio::File::for_path(&workflow.default_dir)));
     let window = ctx.toasts.root().and_downcast::<gtk::Window>();
     let ctx = ctx.clone();
+    let name = name.to_owned();
     dialog.select_folder(window.as_ref(), gio::Cancellable::NONE, move |result| {
         // dismissing the dialog also lands here — only act on a pick
         let Ok(file) = result else {
@@ -1149,18 +1173,16 @@ fn pick_folder(ctx: &Rc<Ctx>) {
         let Some(path) = file.path() else {
             return;
         };
-        let active = ctx.active.borrow().clone();
         if let Some(workflow) = ctx
             .state
             .borrow_mut()
             .workflows
             .iter_mut()
-            .find(|wf| wf.name.eq_ignore_ascii_case(&active))
+            .find(|wf| wf.name.eq_ignore_ascii_case(&name))
         {
             workflow.default_dir = path;
         }
         save(&ctx);
-        sync_sidebar(&ctx);
     });
 }
 
