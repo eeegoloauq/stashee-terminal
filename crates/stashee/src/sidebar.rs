@@ -3,6 +3,8 @@
 //! context menu dispatches window actions (`win.rename-workflow` etc.)
 //! carrying the workflow name.
 
+use std::path::Path;
+
 use gtk4 as gtk;
 use gtk4::gio;
 use gtk4::glib;
@@ -87,6 +89,9 @@ impl Sidebar {
             label.set_ellipsize(gtk::pango::EllipsizeMode::End);
             let row = gtk::ListBoxRow::new();
             row.set_child(Some(&label));
+            // the folder is otherwise invisible — it is only ever set
+            // through the context menu's folder picker
+            row.set_tooltip_text(Some(&display_dir(&workflow.default_dir)));
             attach_menu(&row, &workflow.name, workflow.stash);
             self.list.append(&row);
             if workflow.name.eq_ignore_ascii_case(active) {
@@ -134,4 +139,12 @@ fn action_item(label: &str, action: &str, workflow: &str) -> gio::MenuItem {
     let item = gio::MenuItem::new(Some(label), None);
     item.set_action_and_target_value(Some(action), Some(&workflow.to_variant()));
     item
+}
+
+fn display_dir(dir: &Path) -> String {
+    match dir.strip_prefix(glib::home_dir()) {
+        Ok(rest) if rest.as_os_str().is_empty() => "~".to_owned(),
+        Ok(rest) => format!("~/{}", rest.display()),
+        Err(_) => dir.display().to_string(),
+    }
 }

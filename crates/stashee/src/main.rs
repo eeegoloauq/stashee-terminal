@@ -46,7 +46,8 @@ fn main() -> glib::ExitCode {
         Cli::Config => return cli::edit_config(),
         Cli::Welcome => return cli::welcome(),
         Cli::Help => {
-            print!("{}", cli::USAGE);
+            use std::io::IsTerminal;
+            print!("{}", cli::help_text(std::io::stdout().is_terminal()));
             return glib::ExitCode::SUCCESS;
         }
         Cli::Version => {
@@ -54,7 +55,7 @@ fn main() -> glib::ExitCode {
             return glib::ExitCode::SUCCESS;
         }
         Cli::Error(message) => {
-            eprintln!("stashee: {message}\n\n{}", cli::USAGE);
+            eprintln!("stashee: {message}\n\n{}", cli::usage());
             return glib::ExitCode::FAILURE;
         }
         Cli::Open => {}
@@ -115,6 +116,7 @@ fn parse_args() -> Cli {
     }
     match args.as_slice() {
         [] => Cli::Open,
+        [command] if command == "help" => Cli::Help,
         [command] if command == "list" => Cli::List,
         [command] if command == "config" => Cli::Config,
         [flag] if flag == "--welcome" => Cli::Welcome,
