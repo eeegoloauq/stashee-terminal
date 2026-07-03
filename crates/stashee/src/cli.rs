@@ -49,7 +49,10 @@ const TAGLINE: &str = "a tiling terminal workspace — shells never die by accid
 
 const KEYS: [(&str, &str); 5] = [
     ("Ctrl+T", "new pane — the grid tiles itself"),
-    ("Ctrl+Shift+T", "new SSH pane"),
+    (
+        "Ctrl+Shift+T",
+        "new SSH pane (survives reboots; plain ssh won't)",
+    ),
     ("Ctrl+W", "close pane (kills its shell)"),
     ("Alt+1…9", "switch workflow"),
     ("Alt+Arrows", "move focus between panes"),

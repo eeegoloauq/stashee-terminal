@@ -1,7 +1,8 @@
 //! Everything the app says to tmux, in one place: pure functions that
 //! build argv vectors or parse output. The frontend does the spawning.
 
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 /// Dedicated socket name — keeps our sessions out of the user's own
 /// tmux server, and `tmux -L stashee ls` cleanly lists what we own.
@@ -143,6 +144,45 @@ pub fn list_sessions_argv() -> Vec<String> {
     socket_argv(&["list-sessions", "-F", "#{session_name}"])
 }
 
+/// argv to list every pane's working directory. Tab-separated because
+/// paths contain spaces; the activity flags disambiguate hand-made
+/// splits (see [`parse_pane_dirs`]).
+#[must_use]
+pub fn list_pane_dirs_argv() -> Vec<String> {
+    socket_argv(&[
+        "list-panes",
+        "-a",
+        "-F",
+        "#{session_name}\t#{window_active}#{pane_active}\t#{pane_current_path}",
+    ])
+}
+
+/// Working directory per session from [`list_pane_dirs_argv`] output.
+/// A session normally holds one pane, but power users may split it by
+/// hand (`Ctrl+B` passes through) — then the active pane's directory
+/// wins. Foreign sessions and malformed lines are ignored.
+#[must_use]
+pub fn parse_pane_dirs(output: &str) -> HashMap<String, PathBuf> {
+    let mut dirs = HashMap::new();
+    for line in output.lines() {
+        let mut parts = line.splitn(3, '\t');
+        let (Some(session), Some(active), Some(path)) = (parts.next(), parts.next(), parts.next())
+        else {
+            continue;
+        };
+        if !session.starts_with(SESSION_PREFIX) || path.is_empty() {
+            continue;
+        }
+        if active == "11" {
+            dirs.insert(session.to_owned(), PathBuf::from(path));
+        } else {
+            dirs.entry(session.to_owned())
+                .or_insert_with(|| PathBuf::from(path));
+        }
+    }
+    dirs
+}
+
 /// Our sessions from [`list_sessions_argv`] output; foreign lines are
 /// ignored (power users may create sessions on our socket by hand).
 #[must_use]
@@ -265,5 +305,53 @@ mod tests {
             parse_session_list(output),
             ["stashee-work-abc123", "stashee-srv-x1y2z3"]
         );
+    }
+
+    #[test]
+    fn pane_dirs_argv_matches_spec() {
+        assert_eq!(
+            list_pane_dirs_argv(),
+            [
+                "tmux",
+                "-L",
+                "stashee",
+                "list-panes",
+                "-a",
+                "-F",
+                "#{session_name}\t#{window_active}#{pane_active}\t#{pane_current_path}",
+            ]
+        );
+    }
+
+    #[test]
+    fn pane_dirs_survive_spaces_and_skip_foreign_sessions() {
+        let output = "stashee-work-abc123\t11\t/home/e/my dir\nmain\t11\t/root\n";
+        let dirs = parse_pane_dirs(output);
+        assert_eq!(dirs.len(), 1);
+        assert_eq!(
+            dirs.get("stashee-work-abc123"),
+            Some(&PathBuf::from("/home/e/my dir"))
+        );
+    }
+
+    #[test]
+    fn the_active_pane_wins_a_hand_split_session() {
+        // active pane last, then active pane first: both orders
+        let last = "stashee-work-abc123\t10\t/tmp\nstashee-work-abc123\t11\t/home/e\n";
+        assert_eq!(
+            parse_pane_dirs(last).get("stashee-work-abc123"),
+            Some(&PathBuf::from("/home/e"))
+        );
+        let first = "stashee-work-abc123\t11\t/home/e\nstashee-work-abc123\t10\t/tmp\n";
+        assert_eq!(
+            parse_pane_dirs(first).get("stashee-work-abc123"),
+            Some(&PathBuf::from("/home/e"))
+        );
+    }
+
+    #[test]
+    fn malformed_pane_dir_lines_are_ignored() {
+        let output = "stashee-work-abc123\t11\nno tabs at all\nstashee-x-y\t11\t\n";
+        assert!(parse_pane_dirs(output).is_empty());
     }
 }

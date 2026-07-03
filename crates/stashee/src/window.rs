@@ -289,6 +289,15 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
         let ctx = ctx.clone();
         window.connect_map(move |_| focus_active_pane(&ctx));
     }
+    {
+        // The last save before a possible reboot: no other save event
+        // is guaranteed between the user's final `cd` and closing.
+        let ctx = ctx.clone();
+        window.connect_close_request(move |_| {
+            save(&ctx);
+            glib::Propagation::Proceed
+        });
+    }
 
     for message in &warnings {
         toast(&ctx, message);
@@ -1297,9 +1306,43 @@ fn pick_folder(ctx: &Rc<Ctx>, name: &str) {
 }
 
 fn save(ctx: &Rc<Ctx>) {
+    capture_last_dirs(ctx);
     if let Err(err) = ctx.state.borrow().save(&paths::state_file()) {
         tracing::error!("saving state failed: {err:#}");
         toast(ctx, "Could not save state");
+    }
+}
+
+/// Ask tmux where every stashed pane's shell currently is and remember
+/// it in state. tmux swallows OSC 7, so this — not the VTE signal — is
+/// how stashed local panes get their respawn directory after a reboot;
+/// running on every save keeps the state file current without timers,
+/// since a pane's directory can only change while the app is open.
+fn capture_last_dirs(ctx: &Rc<Ctx>) {
+    let argv = tmux::list_pane_dirs_argv();
+    let output = match Command::new(&argv[0]).args(&argv[1..]).output() {
+        // a failure exit is normal: no server means no live panes
+        Ok(output) if output.status.success() => output,
+        Ok(_) => return,
+        Err(err) => {
+            tracing::debug!("cannot list pane directories: {err}");
+            return;
+        }
+    };
+    let dirs = tmux::parse_pane_dirs(&String::from_utf8_lossy(&output.stdout));
+    if dirs.is_empty() {
+        return;
+    }
+    let mut state = ctx.state.borrow_mut();
+    for workflow in &mut state.workflows {
+        let name = workflow.name.clone();
+        for spec in &mut workflow.panes {
+            if spec.kind == PaneKind::Local
+                && let Some(dir) = dirs.get(&tmux::session_name(&name, &spec.id))
+            {
+                spec.last_dir = Some(dir.clone());
+            }
+        }
     }
 }
 

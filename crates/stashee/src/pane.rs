@@ -137,11 +137,11 @@ pub fn build(
                         &id,
                         &on_exited,
                     );
-                } else if ssh::connection_lost(status) {
-                    // A dead transport is not a user exit: the remote
-                    // tmux still holds the session, so reattach after
-                    // a backoff instead of dropping the pane
-                    // (SPEC.md "SSH panes").
+                } else if ssh::connection_lost(status) || ssh::killed(status) {
+                    // A dead transport or a killed child (logout,
+                    // shutdown) is not a user exit: the pane must
+                    // survive in state, so reattach after a backoff
+                    // instead of dropping it (SPEC.md "SSH panes").
                     reconnecting.set(true);
                     banner.set_title(RECONNECT_BANNER);
                     banner.set_revealed(true);
@@ -192,8 +192,8 @@ pub fn build(
         PaneKind::Local => {
             terminal.connect_child_exited(move |_, _| on_exited(&id));
             // tmux does not forward OSC 7, so this only ever fires for
-            // plain-shell panes — exactly the ones respawned from
-            // `last_dir` (SPEC.md "Workflows").
+            // plain-shell panes; stashed panes get their `last_dir`
+            // from tmux at save time (window::capture_last_dirs).
             let id = spec.id.clone();
             let on_dir_changed = callbacks.on_dir_changed.clone();
             terminal.connect_current_directory_uri_notify(move |terminal| {
