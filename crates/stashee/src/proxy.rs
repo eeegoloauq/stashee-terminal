@@ -1,16 +1,21 @@
 //! `stashee --osc52-proxy <command…>` — the hidden pane-side mode
 //! behind SSH clipboard support. It runs the command on its own pty
 //! and relays bytes untouched, lifting OSC 52 clipboard writes (which
-//! VTE silently drops) out to `wl-copy`. This is what makes "select
-//! in a remote tmux, paste locally" work — see SPEC.md "SSH panes".
-//! Runs before GTK: no display, no GApplication, no single-instance.
+//! VTE silently drops) out to the app's clipboard socket (see
+//! clipboard.rs). This is what makes "select in a remote tmux, paste
+//! locally" work — see SPEC.md "SSH panes". Runs before GTK: no
+//! display, no GApplication, no single-instance.
 
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::{self, Read, Write};
-use std::process::{Command, ExitStatus, Stdio};
+use std::os::unix::net::UnixStream;
+use std::process::ExitStatus;
+use std::time::Duration;
 
 use stashee_core::osc52;
+
+use crate::paths;
 
 pub const FLAG: &str = "--osc52-proxy";
 
@@ -103,7 +108,7 @@ pub fn run(cmd: &[OsString]) -> i32 {
                     break;
                 }
                 for text in scanner.feed(&buf[..n]) {
-                    copy_to_clipboard(&text);
+                    copy_to_clipboard(text);
                 }
             }
             Err(err) if err.kind() == io::ErrorKind::Interrupted => {}
@@ -118,26 +123,20 @@ pub fn run(cmd: &[OsString]) -> i32 {
     }
 }
 
-/// Copy failures are deliberately silent: our stderr *is* the user's
-/// terminal, and a copy that cannot land has nowhere better to report.
-fn copy_to_clipboard(text: &[u8]) {
-    let argv: &[&str] = if std::env::var_os("WAYLAND_DISPLAY").is_some() {
-        &["wl-copy"]
-    } else {
-        &["xclip", "-selection", "clipboard", "-in"]
-    };
-    let child = Command::new(argv[0])
-        .args(&argv[1..])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn();
-    let Ok(mut child) = child else { return };
-    if let Some(mut stdin) = child.stdin.take() {
-        let _ = stdin.write_all(text);
-    }
-    // wl-copy forks off a clipboard server and returns immediately
-    let _ = child.wait();
+/// Hand the copy to the app over its clipboard socket; the app sets
+/// the clipboard through GDK — it owns a window, so no focus games.
+/// A dedicated thread with a write timeout: the relay loop above must
+/// never wait on the clipboard, whatever the other side is doing.
+/// Failures are deliberately silent here (our stderr *is* the user's
+/// terminal); the app side logs its own.
+fn copy_to_clipboard(text: Vec<u8>) {
+    std::thread::spawn(move || {
+        let Ok(mut stream) = UnixStream::connect(paths::clipboard_socket()) else {
+            return;
+        };
+        let _ = stream.set_write_timeout(Some(Duration::from_secs(2)));
+        let _ = stream.write_all(&text);
+    });
 }
 
 fn exit_code(status: ExitStatus) -> i32 {
