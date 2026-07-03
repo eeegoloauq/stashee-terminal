@@ -25,6 +25,7 @@ killing it — reopen, and every shell is back exactly where it was.
 install -Dm755 %{srcroot}/target/release/stashee %{buildroot}%{_bindir}/stashee
 install -Dm644 %{srcroot}/crates/stashee/data/dev.stashee.Terminal.desktop %{buildroot}%{_datadir}/applications/dev.stashee.Terminal.desktop
 install -Dm644 %{srcroot}/crates/stashee/data/dev.stashee.Terminal.svg %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/dev.stashee.Terminal.svg
+install -Dm644 %{srcroot}/crates/stashee/data/dev.stashee.Terminal.metainfo.xml %{buildroot}%{_metainfodir}/dev.stashee.Terminal.metainfo.xml
 install -Dm644 %{srcroot}/LICENSE %{buildroot}%{_datadir}/licenses/%{name}/LICENSE
 
 %files
@@ -32,3 +33,4 @@ install -Dm644 %{srcroot}/LICENSE %{buildroot}%{_datadir}/licenses/%{name}/LICEN
 %{_bindir}/stashee
 %{_datadir}/applications/dev.stashee.Terminal.desktop
 %{_datadir}/icons/hicolor/scalable/apps/dev.stashee.Terminal.svg
+%{_metainfodir}/dev.stashee.Terminal.metainfo.xml
