@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Stashee
-Comment=Glass tiling terminal that stashes your workflows
+Comment=Tiling terminal that stashes your workflows
 Exec=stashee
 Icon=dev.stashee.Terminal
 Terminal=false

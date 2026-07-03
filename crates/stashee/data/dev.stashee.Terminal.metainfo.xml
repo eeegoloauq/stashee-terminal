@@ -4,7 +4,7 @@
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
   <name>Stashee</name>
-  <summary>Glass tiling terminal that stashes your workflows</summary>
+  <summary>Tiling terminal that stashes your workflows</summary>
   <description>
     <p>
       Terminals are grouped into named workflows and tile automatically.
