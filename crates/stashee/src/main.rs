@@ -1,6 +1,7 @@
 //! Entry point: CLI dispatch, application setup, CSS.
 
 mod cli;
+mod clipboard;
 mod grid;
 mod keys;
 mod pane;
@@ -65,7 +66,12 @@ fn main() -> glib::ExitCode {
         .application_id(APP_ID)
         .flags(gio::ApplicationFlags::HANDLES_COMMAND_LINE)
         .build();
-    app.connect_startup(|_| load_css());
+    // Startup runs only in the primary instance — exactly one
+    // clipboard listener, like the window itself.
+    app.connect_startup(|_| {
+        load_css();
+        clipboard::serve();
+    });
     app.connect_activate(window::present);
     // A second invocation's argv arrives here in the primary instance
     // over D-Bus (SPEC.md "CLI"). It passed parse_args() in its own

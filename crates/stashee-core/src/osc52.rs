@@ -11,7 +11,8 @@
 
 /// Longer payloads are runaway sequences, not copies (tmux sends at
 /// most a few hundred kilobytes); collection is abandoned past this.
-const MAX_PAYLOAD: usize = 8 * 1024 * 1024;
+/// Public so the app-side clipboard receiver caps reads identically.
+pub const MAX_PAYLOAD: usize = 8 * 1024 * 1024;
 
 /// OSC parameter numbers are short; anything longer is not for us.
 const MAX_PARAM: usize = 8;

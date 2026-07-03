@@ -15,6 +15,14 @@ pub fn state_file() -> PathBuf {
     glib::user_data_dir().join("stashee").join("state.toml")
 }
 
+/// Unix socket where the running app receives OSC 52 copies from the
+/// pane-side proxies (clipboard.rs serves it, proxy.rs connects).
+pub fn clipboard_socket() -> PathBuf {
+    glib::user_runtime_dir()
+        .join("stashee")
+        .join("clipboard.sock")
+}
+
 const TMUX_CONF: &str = include_str!("../data/tmux.conf");
 
 /// tmux needs a real file path for `-f`, so the bundled config is
