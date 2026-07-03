@@ -67,7 +67,7 @@ pub(crate) struct Ctx {
     pub(crate) backdrop: Rc<Backdrop>,
     /// For swapping the shortcut controller on config reload.
     pub(crate) window: glib::WeakRef<adw::ApplicationWindow>,
-    pub(crate) shortcuts: RefCell<Option<gtk::ShortcutController>>,
+    pub(crate) shortcuts: RefCell<Option<gtk::EventControllerKey>>,
     /// Held so the config.toml watch keeps firing (settings.rs).
     pub(crate) config_monitor: RefCell<Option<gio::FileMonitor>>,
 }
