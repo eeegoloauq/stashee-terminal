@@ -26,8 +26,9 @@ pub enum Direction {
 }
 
 /// The pane one step in `direction` from `index` in an `n`-pane grid,
-/// `None` at the grid's edge. Vertical moves keep the column, clamped
-/// to the target row's width.
+/// `None` at the grid's edge. Horizontal moves walk pane order, so they
+/// wrap onto the previous/next row. Vertical moves keep the column,
+/// clamped to the target row's width.
 #[must_use]
 pub fn neighbor(n: usize, index: usize, direction: Direction) -> Option<usize> {
     let rows = layout(n);
@@ -39,8 +40,8 @@ pub fn neighbor(n: usize, index: usize, direction: Direction) -> Option<usize> {
         }
         let col = index - start;
         return match direction {
-            Direction::Left => col.checked_sub(1).map(|col| start + col),
-            Direction::Right => (col + 1 < len).then_some(index + 1),
+            Direction::Left => index.checked_sub(1),
+            Direction::Right => (index + 1 < n).then_some(index + 1),
             Direction::Up => row.checked_sub(1).map(|above| {
                 let len = rows[above];
                 start - len + col.min(len - 1)
@@ -167,18 +168,19 @@ mod tests {
     }
 
     #[test]
-    fn neighbor_moves_within_a_row() {
+    fn neighbor_walks_pane_order_horizontally() {
         // 5 panes → [3, 2]: 0 1 2 / 3 4
         assert_eq!(neighbor(5, 0, Direction::Right), Some(1));
-        assert_eq!(neighbor(5, 1, Direction::Right), Some(2));
         assert_eq!(neighbor(5, 1, Direction::Left), Some(0));
-        assert_eq!(neighbor(5, 4, Direction::Left), Some(3));
+        // horizontal moves cross row boundaries
+        assert_eq!(neighbor(5, 2, Direction::Right), Some(3));
+        assert_eq!(neighbor(5, 3, Direction::Left), Some(2));
     }
 
     #[test]
     fn neighbor_stops_at_the_edges() {
         assert_eq!(neighbor(5, 0, Direction::Left), None);
-        assert_eq!(neighbor(5, 2, Direction::Right), None);
+        assert_eq!(neighbor(5, 4, Direction::Right), None);
         assert_eq!(neighbor(5, 1, Direction::Up), None);
         assert_eq!(neighbor(5, 4, Direction::Down), None);
         assert_eq!(neighbor(1, 0, Direction::Right), None);

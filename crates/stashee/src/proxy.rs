@@ -120,8 +120,6 @@ pub fn run(cmd: &[OsString]) -> i32 {
 
 /// Copy failures are deliberately silent: our stderr *is* the user's
 /// terminal, and a copy that cannot land has nowhere better to report.
-/// Tool choice mirrors `copy-command` in data/tmux.conf — keep the two
-/// in step.
 fn copy_to_clipboard(text: &[u8]) {
     let argv: &[&str] = if std::env::var_os("WAYLAND_DISPLAY").is_some() {
         &["wl-copy"]
