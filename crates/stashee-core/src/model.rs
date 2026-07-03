@@ -11,9 +11,10 @@ pub struct PaneSpec {
     /// session name (see [`crate::tmux::session_name`]).
     pub id: String,
     pub kind: PaneKind,
-    /// Last known working directory (OSC 7). Respawn directory for
-    /// panes of non-stashed workflows and for stashed panes recreated
-    /// after a reboot; informational otherwise.
+    /// Last known working directory — OSC 7 for plain-shell panes,
+    /// `pane_current_path` from tmux for stashed ones. Respawn
+    /// directory for panes of non-stashed workflows and for stashed
+    /// panes recreated after a reboot; informational otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_dir: Option<PathBuf>,
 }

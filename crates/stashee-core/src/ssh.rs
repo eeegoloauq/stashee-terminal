@@ -60,6 +60,17 @@ pub fn connection_lost(wait_status: i32) -> bool {
     wait_status & 0x7f == 0 && (wait_status >> 8) & 0xff == 255
 }
 
+/// True when the ssh child was killed rather than exiting on its own:
+/// a signal death, or an exit code of 128+sig (the OSC 52 proxy maps
+/// its child's signal death to that). This is session teardown — a
+/// GNOME logout or system shutdown SIGTERMs pane children while the
+/// app is still alive — not a user exit, so the pane must survive in
+/// state; callers treat it like a lost connection.
+#[must_use]
+pub fn killed(wait_status: i32) -> bool {
+    wait_status & 0x7f != 0 || (wait_status >> 8) & 0xff >= 128
+}
+
 /// `ssh <host> -- tmux <args…>` — a one-shot remote tmux command (no
 /// tty, unlike the attach).
 fn remote_tmux_argv(host: &str, args: &[&str]) -> Vec<String> {
@@ -139,6 +150,16 @@ mod tests {
         assert!(!connection_lost(127 << 8)); // tmux missing on host
         assert!(!connection_lost(1 << 8)); // remote command failed
         assert!(!connection_lost(9)); // killed by a signal
+    }
+
+    #[test]
+    fn only_a_violent_death_counts_as_killed() {
+        assert!(killed(15)); // SIGTERM (logout/shutdown)
+        assert!(killed(9)); // SIGKILL
+        assert!(killed(143 << 8)); // proxy's 128+SIGTERM mapping
+        assert!(!killed(0)); // detach / user exit
+        assert!(!killed(1 << 8)); // remote command failed
+        assert!(!killed(127 << 8)); // tmux missing on host
     }
 
     #[test]
