@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Stashee
+Comment=Glass tiling terminal that stashes your workflows
+Exec=stashee
+Icon=dev.stashee.Terminal
+Terminal=false
+Categories=System;TerminalEmulator;
+Keywords=terminal;tmux;workflow;shell;stash;
+StartupNotify=true

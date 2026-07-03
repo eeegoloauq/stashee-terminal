@@ -1,0 +1,11 @@
+/target
+/dist
+/packaging/pkg
+/packaging/src
+*.pkg.tar.zst
+*.rpm
+
+# private notes live in egor/stashee-notes — never commit local copies
+/CLAUDE.md
+/docs/SPEC.md
+/docs/ARCHITECTURE.md

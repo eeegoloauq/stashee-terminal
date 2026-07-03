@@ -1,0 +1,96 @@
+# Bridge job: heavy builds run on GitHub Actions (see .github/workflows/,
+# fed by the Forgejo push mirror). This job only waits for the GitHub
+# release assets and republishes them into the Forgejo package registry,
+# so `dnf`/`pacman` keep updating from here. No compilation locally.
+#
+# NB: because .forgejo/workflows/ exists, Forgejo ignores
+# .github/workflows/ entirely — those run on GitHub only.
+name: Publish packages
+
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  GH_REPO: eeegoloauq/stashee-terminal
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - name: Install tools
+        run: dnf install -y jq
+
+      # First cold build on GitHub takes ~20-30 min; with warm cargo
+      # cache more like 5-10. Poll for up to 45 min.
+      - name: Wait for GitHub release assets
+        run: |
+          api="https://api.github.com/repos/${GH_REPO}/releases/tags/${GITHUB_REF_NAME}"
+          for i in $(seq 1 45); do
+            json=$(curl -s "$api")
+            rpm_url=$(echo "$json" | jq -r '.assets[]?.browser_download_url | select(endswith(".rpm"))')
+            pkg_url=$(echo "$json" | jq -r '.assets[]?.browser_download_url | select(endswith(".pkg.tar.zst"))')
+            if [ -n "$rpm_url" ] && [ -n "$pkg_url" ]; then
+              echo "rpm_url=$rpm_url" >> "$GITHUB_ENV"
+              echo "pkg_url=$pkg_url" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "attempt $i/45: assets not ready yet"
+            sleep 60
+          done
+          echo "GitHub release assets never appeared for ${GITHUB_REF_NAME}" >&2
+          exit 1
+
+      - name: Download packages from GitHub
+        run: |
+          curl -fsSL -o "$(basename "$rpm_url")" "$rpm_url"
+          curl -fsSL -o "$(basename "$pkg_url")" "$pkg_url"
+          ls -la stashee-*
+
+      # Registry, not just release assets: `dnf` pulls updates from
+      # /api/packages/<owner>/rpm.repo (see README "Install").
+      - name: Publish to the Forgejo RPM registry
+        run: |
+          auth="${GITHUB_REPOSITORY_OWNER}:${{ secrets.REGISTRY_TOKEN }}"
+          rpm_file=$(basename "$rpm_url")
+          # stashee-<ver>-1.fcNN.x86_64.rpm -> <ver>-1.fcNN
+          ver_rel=$(echo "$rpm_file" | sed -E 's/^stashee-(.+)\.x86_64\.rpm$/\1/')
+          # Re-releases force-move the tag: evict the stale build first
+          # (a 404 on the first publish of a version is fine).
+          curl -s -o /dev/null -X DELETE --user "$auth" \
+            "${GITHUB_SERVER_URL}/api/v1/packages/${GITHUB_REPOSITORY_OWNER}/rpm/stashee/${ver_rel}" || true
+          curl --fail --user "$auth" --upload-file "$rpm_file" \
+            "${GITHUB_SERVER_URL}/api/packages/${GITHUB_REPOSITORY_OWNER}/rpm/upload"
+
+      - name: Publish to the Forgejo Arch registry
+        run: |
+          auth="${GITHUB_REPOSITORY_OWNER}:${{ secrets.REGISTRY_TOKEN }}"
+          pkg_file=$(basename "$pkg_url")
+          # stashee-<ver>-1-x86_64.pkg.tar.zst -> <ver>-1
+          ver_rel=$(echo "$pkg_file" | sed -E 's/^stashee-(.+)-x86_64\.pkg\.tar\.zst$/\1/')
+          curl -s -o /dev/null -X DELETE --user "$auth" \
+            "${GITHUB_SERVER_URL}/api/v1/packages/${GITHUB_REPOSITORY_OWNER}/arch/stashee/${ver_rel}" || true
+          curl --fail --user "$auth" --upload-file "$pkg_file" \
+            "${GITHUB_SERVER_URL}/api/packages/${GITHUB_REPOSITORY_OWNER}/arch/stashee"
+
+      # Mirror the release object itself, so tags on Forgejo show a
+      # release with the packages attached (parity with GitHub).
+      - name: Create Forgejo release
+        run: |
+          api="${GITHUB_SERVER_URL}/api/v1/repos/${GITHUB_REPOSITORY}"
+          hdr="Authorization: token ${{ github.token }}"
+          rid=$(curl -s -X POST -H "$hdr" -H 'Content-Type: application/json' "$api/releases" \
+            -d "{\"tag_name\":\"${GITHUB_REF_NAME}\",\"name\":\"${GITHUB_REF_NAME}\"}" | jq -r '.id // empty')
+          # Re-release: the release already exists — reuse it, drop old assets.
+          if [ -z "$rid" ]; then
+            rid=$(curl -s -H "$hdr" "$api/releases/tags/${GITHUB_REF_NAME}" | jq -r '.id')
+            for aid in $(curl -s -H "$hdr" "$api/releases/$rid/assets" | jq -r '.[].id'); do
+              curl -s -o /dev/null -X DELETE -H "$hdr" "$api/releases/$rid/assets/$aid"
+            done
+          fi
+          for f in stashee-*; do
+            curl -s --fail -o /dev/null -X POST -H "$hdr" -F "attachment=@$f" \
+              "$api/releases/$rid/assets?name=$f"
+          done
+          echo "forgejo release $rid: ok"

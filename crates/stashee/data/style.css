@@ -1,0 +1,47 @@
+/* Glass design tokens. The window carries the translucent backdrop
+ * (alpha overridden at runtime from config.appearance.opacity);
+ * terminals are fully transparent panes over it with hairline borders.
+ * On compositors that blur behind windows this upgrades to real
+ * frosted glass for free. */
+
+window.stashee {
+  background-color: rgba(16, 18, 26, 0.88);
+}
+
+window.stashee headerbar {
+  background: transparent;
+  box-shadow: none;
+}
+
+window.stashee .sidebar-panel {
+  background-color: rgba(255, 255, 255, 0.03);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+window.stashee .sidebar-panel list {
+  background: transparent;
+}
+
+.pane {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 6px;
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.pane:focus-within {
+  border-color: rgba(120, 170, 255, 0.4);
+}
+
+/* Opaque token set for the system high-contrast (reduce-transparency)
+ * setting; the window backdrop itself goes opaque via the runtime
+ * provider in window.rs. */
+
+window.stashee.reduced-transparency .sidebar-panel {
+  background-color: rgb(30, 32, 40);
+}
+
+window.stashee.reduced-transparency .pane {
+  background-color: rgb(24, 26, 34);
+  border-color: rgba(255, 255, 255, 0.25);
+}

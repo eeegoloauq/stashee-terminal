@@ -1,0 +1,21 @@
+# Binary-only PKGBUILD: CI builds the release binary with cargo, this
+# just stages files. Invoke from packaging/ with:
+#   STASHEE_SRC=<checkout dir> STASHEE_VERSION=<x.y.z> makepkg -f
+pkgname=stashee
+pkgver="${STASHEE_VERSION:-0.0.0}"
+pkgrel=1
+pkgdesc="Glass-styled tiling terminal workspace over tmux"
+arch=('x86_64')
+url="https://github.com/eeegoloauq/stashee-terminal"
+license=('MIT')
+depends=('gtk4' 'libadwaita' 'vte4' 'tmux')
+optdepends=('wl-clipboard: mouse-selection copy on Wayland'
+            'xclip: mouse-selection copy on X11')
+options=('!strip' '!debug')
+
+package() {
+  install -Dm755 "$STASHEE_SRC/target/release/stashee" "$pkgdir/usr/bin/stashee"
+  install -Dm644 "$STASHEE_SRC/crates/stashee/data/dev.stashee.Terminal.desktop" "$pkgdir/usr/share/applications/dev.stashee.Terminal.desktop"
+  install -Dm644 "$STASHEE_SRC/crates/stashee/data/dev.stashee.Terminal.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/dev.stashee.Terminal.svg"
+  install -Dm644 "$STASHEE_SRC/LICENSE" "$pkgdir/usr/share/licenses/stashee/LICENSE"
+}

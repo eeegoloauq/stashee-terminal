@@ -1,0 +1,23 @@
+[package]
+name = "stashee"
+description = "Glass-styled tiling terminal workspace over tmux — GTK4 Linux frontend."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+stashee-core = { path = "../stashee-core" }
+stashee-pty = { path = "../stashee-pty" }
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# v4_14: GTK 4.14 baseline (Fedora 40+ / Ubuntu 24.04); also unlocks
+# `Accessible`, which the published adw/vte4 bindings reference but
+# forget to enable themselves.
+gtk4 = { version = "0.11", features = ["v4_14"] }
+# v1_5 (same Fedora 40+ baseline): AlertDialog
+libadwaita = { version = "0.9", features = ["v1_5"] }
+vte4 = "0.10"
+
+[lints]
+workspace = true

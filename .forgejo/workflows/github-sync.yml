@@ -1,0 +1,36 @@
+# 1:1 mirror to GitHub: real commits, real messages — the history IS
+# public, write it accordingly. Forgejo stays the source of truth;
+# main and release tags are force-pushed, so GitHub never diverges.
+# Contributions flow the other way: fetch the GitHub PR branch, merge
+# here, and the merged commits land back on GitHub marked as merged.
+name: Sync to GitHub
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+env:
+  GH_REMOTE: ssh://git@github.com/eeegoloauq/stashee-terminal.git
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.GH_PUSH_KEY }}" > ~/.ssh/gh_push
+          chmod 600 ~/.ssh/gh_push
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/gh_push -o UserKnownHostsFile=~/.ssh/known_hosts"
+          git remote add github "$GH_REMOTE"
+          case "$GITHUB_REF" in
+            refs/heads/main) git push -qf github "HEAD:refs/heads/main" ;;
+            refs/tags/*)     git push -qf github "refs/tags/${GITHUB_REF_NAME}" ;;
+          esac
+          echo "synced $GITHUB_REF"

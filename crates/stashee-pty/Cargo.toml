@@ -1,0 +1,19 @@
+[package]
+name = "stashee-pty"
+description = "The workspace's only unsafe island: raw pty plumbing for the OSC 52 proxy."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+libc = "0.2"
+
+# Deliberately not `workspace = true`: the workspace forbids
+# `unsafe_code`, and this crate exists precisely to contain the few
+# libc calls (openpty, controlling tty, termios, SIGWINCH) that need
+# it. Everything else is inherited by hand.
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+dbg_macro = "deny"
+todo = "deny"

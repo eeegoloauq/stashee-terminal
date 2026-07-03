@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-fedora:
+    runs-on: ubuntu-latest
+    # fedora:latest: the runner's ubuntu image ships GTK 4.8, the gtk4
+    # crate needs >= 4.14. Fedora also packages the whole Rust toolchain.
+    container: fedora:latest
+    steps:
+      - name: Install build dependencies
+        run: dnf install -y nodejs git gcc rust cargo gtk4-devel libadwaita-devel vte291-gtk4-devel rpm-build
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+      - name: Build (release)
+        run: cargo build --release --workspace
+      - name: Build RPM
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          rpmbuild -bb packaging/stashee.spec \
+            --define "version $version" \
+            --define "srcroot $PWD" \
+            --define "_rpmdir $PWD/dist"
+      - name: Attach RPM to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/x86_64/stashee-*.rpm
+
+  build-arch:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install build dependencies
+        run: pacman -Syu --noconfirm gcc pkgconf rust gtk4 libadwaita vte4 nodejs git fakeroot
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-release-arch-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-arch-
+      - name: Build (release)
+        run: cargo build --release --workspace
+      # makepkg refuses to run as root, so stage the package as a
+      # throwaway user.
+      - name: Build package
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          useradd -m builder
+          mkdir dist
+          chown builder packaging dist
+          chmod -R a+rX .
+          su builder -c "cd '$PWD/packaging' && \
+            STASHEE_SRC='$PWD' STASHEE_VERSION='$version' PKGDEST='$PWD/dist' \
+            makepkg -f --nodeps"
+      - name: Attach package to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/stashee-*.pkg.tar.zst

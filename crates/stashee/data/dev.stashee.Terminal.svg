@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- App icon: the glass backdrop color (#10121a) with the prompt glyph
+     in the pane focus accent (#78aaff). Same tokens as data/style.css. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.02"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="#10121a"/>
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="url(#glass)"/>
+  <rect x="8.75" y="8.75" width="110.5" height="110.5" rx="25.25" fill="none"
+        stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.5"/>
+  <path d="M 42 46 L 62 64 L 42 82" fill="none" stroke="#78aaff"
+        stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="72" y="74" width="20" height="9" rx="3" fill="#e6e9f2" fill-opacity="0.85"/>
+</svg>

@@ -1,0 +1,19 @@
+[package]
+name = "stashee-core"
+description = "UI-agnostic kernel of stashee-terminal: workflows, tiling math, the tmux/ssh command model, and persisted state."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+toml.workspace = true
+fastrand.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true
