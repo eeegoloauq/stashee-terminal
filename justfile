@@ -28,6 +28,7 @@ install:
     [ -e ~/.local/bin/st ] || ln -s stashee ~/.local/bin/st
     install -Dm644 crates/stashee/data/dev.stashee.Terminal.desktop ~/.local/share/applications/dev.stashee.Terminal.desktop
     install -Dm644 crates/stashee/data/dev.stashee.Terminal.svg ~/.local/share/icons/hicolor/scalable/apps/dev.stashee.Terminal.svg
+    for s in 64 128 256; do install -Dm644 crates/stashee/data/dev.stashee.Terminal-$s.png ~/.local/share/icons/hicolor/${s}x${s}/apps/dev.stashee.Terminal.png; done
     install -Dm644 crates/stashee/data/dev.stashee.Terminal.metainfo.xml ~/.local/share/metainfo/dev.stashee.Terminal.metainfo.xml
     -update-desktop-database ~/.local/share/applications
 
@@ -44,5 +45,6 @@ uninstall:
     [ "$(readlink ~/.local/bin/st 2>/dev/null)" = stashee ] && rm ~/.local/bin/st || true
     rm -f ~/.local/share/applications/dev.stashee.Terminal.desktop
     rm -f ~/.local/share/icons/hicolor/scalable/apps/dev.stashee.Terminal.svg
+    rm -f ~/.local/share/icons/hicolor/{64x64,128x128,256x256}/apps/dev.stashee.Terminal.png
     rm -f ~/.local/share/metainfo/dev.stashee.Terminal.metainfo.xml
     -update-desktop-database ~/.local/share/applications
