@@ -51,9 +51,16 @@ dependency, so other platforms can follow as native frontends.
 
 ## Install
 
+Fedora, via [COPR](https://copr.fedorainfracloud.org/coprs/eeegoloauq/stashee/):
+
+```sh
+sudo dnf copr enable eeegoloauq/stashee
+sudo dnf install stashee
+```
+
 Each release on the
 [releases page](https://github.com/eeegoloauq/stashee-terminal/releases)
-ships an `.rpm` for Fedora and a `.pkg.tar.zst` for Arch.
+also ships an `.rpm` for Fedora and a `.pkg.tar.zst` for Arch:
 
 ```sh
 # Fedora
