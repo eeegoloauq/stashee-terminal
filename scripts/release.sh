@@ -58,7 +58,7 @@ aur)
   cargo clippy --workspace --all-targets -- -D warnings
   cargo test --workspace
   if command -v appstreamcli >/dev/null; then
-    appstreamcli validate "$metainfo"
+    appstreamcli validate --no-net "$metainfo"
   fi
 
   git add Cargo.toml Cargo.lock "$copr_spec" "$metainfo"
