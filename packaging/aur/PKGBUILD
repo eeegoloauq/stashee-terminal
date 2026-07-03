@@ -3,7 +3,7 @@
 # instead (binary-only). Bump pkgver together with the workspace
 # Cargo.toml, update sha256sums, regenerate .SRCINFO.
 pkgname=stashee
-pkgver=0.1.6
+pkgver=0.1.7
 pkgrel=1
 pkgdesc="Glass-styled tiling terminal workspace over tmux"
 arch=('x86_64' 'aarch64')
@@ -14,7 +14,7 @@ makedepends=('cargo')
 optdepends=('wl-clipboard: mouse-selection copy on Wayland'
             'xclip: mouse-selection copy on X11')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('02507803aa19e569e84a9ecc9091d5895e62c9ba5821ebb6dd5e3d2c914f3dde')
+sha256sums=('5472366c9ae351fcb01a2f16e2ecfee1a72c514d14cfe168e9642e8e88aa26d2')
 
 prepare() {
   cd "stashee-terminal-$pkgver"
