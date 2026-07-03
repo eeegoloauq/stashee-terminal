@@ -729,7 +729,7 @@ fn show_about(ctx: &Rc<Ctx>) {
         .website("https://github.com/eeegoloauq/stashee-terminal")
         .issue_url("https://github.com/eeegoloauq/stashee-terminal/issues")
         .license_type(gtk::License::MitX11)
-        .comments("A glass tiling terminal workspace — shells never die by accident.")
+        .comments("A tiling terminal workspace — shells never die by accident.")
         .build();
     dialog.present(Some(&ctx.toasts));
 }

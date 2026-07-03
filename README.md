@@ -2,7 +2,7 @@
 
 # stashee
 
-A glass-styled tiling terminal workspace for Linux.
+A tiling terminal workspace for Linux.
 
 <img src="docs/shots/welcome.png" alt="stashee on first launch" width="85%">
 
@@ -42,12 +42,6 @@ where it was.
 
 There is no settings GUI, no plugin system, no theme gallery. The scope
 is deliberately small.
-
-## Status
-
-Pre-alpha. v1 targets Fedora + GNOME/Wayland; other distros and
-compositors come later. The core crate (`stashee-core`) has no GTK
-dependency, so other platforms can follow as native frontends.
 
 ## Install
 

@@ -45,7 +45,7 @@ const LOGO: [(&str, &str); 6] = [
     ),
 ];
 
-const TAGLINE: &str = "a glass tiling terminal workspace — shells never die by accident";
+const TAGLINE: &str = "a tiling terminal workspace — shells never die by accident";
 
 const KEYS: [(&str, &str); 5] = [
     ("Ctrl+T", "new pane — the grid tiles itself"),
