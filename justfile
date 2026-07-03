@@ -31,6 +31,14 @@ install:
     install -Dm644 crates/stashee/data/dev.stashee.Terminal.metainfo.xml ~/.local/share/metainfo/dev.stashee.Terminal.metainfo.xml
     -update-desktop-database ~/.local/share/applications
 
+# bump the version everywhere it is duplicated, run the gate, commit, tag
+release version:
+    scripts/release.sh {{version}}
+
+# after main + tag are on GitHub: update the AUR checksum and commit
+release-aur:
+    scripts/release.sh aur
+
 uninstall:
     rm -f ~/.local/bin/stashee
     [ "$(readlink ~/.local/bin/st 2>/dev/null)" = stashee ] && rm ~/.local/bin/st || true
