@@ -5,7 +5,7 @@
 %define debug_package %{nil}
 
 Name:           stashee
-Version:        0.1.3
+Version:        0.1.4
 Release:        1%{?dist}
 Summary:        Glass-styled tiling terminal workspace over tmux
 License:        MIT
