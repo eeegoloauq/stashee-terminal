@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/stashee-core", "crates/stashee-pty", "crates/stashee"]
 
 [workspace.package]
-version = "0.1.7"
+version = "0.1.8"
 edition = "2024"
 license = "MIT"
 
