@@ -212,7 +212,22 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
         .menu_model(&new_menu)
         .build();
     new_button.set_action_name(Some("win.new-pane"));
+    // the button sits in the window corner — left-aligning the popover
+    // keeps it hanging off the button instead of past the window edge
+    if let Some(popover) = new_button.popover() {
+        popover.set_halign(gtk::Align::Start);
+    }
     header.pack_start(&new_button);
+    let app_menu = gio::Menu::new();
+    app_menu.append(Some("Keyboard Shortcuts"), Some("win.shortcuts"));
+    app_menu.append(Some("About Stashee"), Some("win.about"));
+    let menu_button = gtk::MenuButton::builder()
+        .icon_name("open-menu-symbolic")
+        .menu_model(&app_menu)
+        .primary(true)
+        .tooltip_text("Main Menu")
+        .build();
+    header.pack_end(&menu_button);
     let toolbar = adw::ToolbarView::new();
     toolbar.add_top_bar(&header);
     toolbar.set_content(Some(&body));
@@ -312,6 +327,20 @@ fn install_actions(ctx: &Rc<Ctx>, window: &adw::ApplicationWindow) {
     }
     window.add_action(&action);
 
+    let action = gio::SimpleAction::new("shortcuts", None);
+    {
+        let ctx = ctx.clone();
+        action.connect_activate(move |_, _| show_shortcuts(&ctx));
+    }
+    window.add_action(&action);
+
+    let action = gio::SimpleAction::new("about", None);
+    {
+        let ctx = ctx.clone();
+        action.connect_activate(move |_, _| show_about(&ctx));
+    }
+    window.add_action(&action);
+
     let action = gio::SimpleAction::new("close-pane", None);
     {
         let ctx = ctx.clone();
@@ -371,10 +400,16 @@ fn install_actions(ctx: &Rc<Ctx>, window: &adw::ApplicationWindow) {
 /// `live` decides each pane's mode: an alive session reattaches as a
 /// tmux pane even when the workflow no longer stashes.
 fn build_view(ctx: &Rc<Ctx>, workflow: &Workflow, live: &[String]) {
+    let open = gtk::Button::with_label("New Pane");
+    open.add_css_class("pill");
+    open.add_css_class("suggested-action");
+    open.set_halign(gtk::Align::Center);
+    open.set_action_name(Some("win.new-pane"));
     let empty = adw::StatusPage::builder()
         .icon_name("utilities-terminal-symbolic")
         .title("Stashed and empty")
         .description("Press Ctrl+T to open a terminal")
+        .child(&open)
         .build();
     let grid = TilingGrid::new();
     let stack = gtk::Stack::new();
@@ -622,6 +657,81 @@ fn add_pane(ctx: &Rc<Ctx>, spec: PaneSpec) {
     refresh_view(ctx, index);
     save(ctx);
     terminal.grab_focus();
+}
+
+/// "Keyboard Shortcuts" from the primary menu. GtkShortcutsWindow is
+/// builder-XML-only, so the XML is assembled from the live config —
+/// rebound keys show as bound, disabled (empty) ones drop their row.
+fn show_shortcuts(ctx: &Rc<Ctx>) {
+    let keys = ctx.config.borrow().keys.clone();
+    let shortcut = |title: &str, accelerator: &str| {
+        if accelerator.trim().is_empty() {
+            return String::new();
+        }
+        format!(
+            "<child><object class=\"GtkShortcutsShortcut\">\
+             <property name=\"title\">{}</property>\
+             <property name=\"accelerator\">{}</property>\
+             </object></child>",
+            glib::markup_escape_text(title),
+            glib::markup_escape_text(accelerator),
+        )
+    };
+    let group = |title: &str, body: &str| {
+        format!(
+            "<child><object class=\"GtkShortcutsGroup\">\
+             <property name=\"title\">{title}</property>{body}</object></child>"
+        )
+    };
+    // a GtkShortcutsShortcut accelerator is a space-separated list
+    let focus = [
+        &keys.focus_left,
+        &keys.focus_right,
+        &keys.focus_up,
+        &keys.focus_down,
+    ]
+    .iter()
+    .map(|accel| accel.trim())
+    .filter(|accel| !accel.is_empty())
+    .collect::<Vec<_>>()
+    .join(" ");
+    let panes = shortcut("New pane", &keys.new_pane)
+        + &shortcut("New SSH pane", &keys.new_ssh_pane)
+        + &shortcut("Close pane", &keys.close_pane)
+        + &shortcut("Move focus", &focus);
+    let workflows = shortcut("Switch workflow", "<Alt>1...<Alt>9");
+    let clipboard = shortcut("Copy", &keys.copy) + &shortcut("Paste", &keys.paste);
+    let ui = format!(
+        "<interface><object class=\"GtkShortcutsWindow\" id=\"shortcuts\">\
+         <property name=\"modal\">true</property>\
+         <child><object class=\"GtkShortcutsSection\">{}{}{}</object></child>\
+         </object></interface>",
+        group("Panes", &panes),
+        group("Workflows", &workflows),
+        group("Clipboard", &clipboard),
+    );
+    let builder = gtk::Builder::from_string(&ui);
+    let Some(dialog) = builder.object::<gtk::ShortcutsWindow>("shortcuts") else {
+        tracing::error!("shortcuts window failed to build");
+        return;
+    };
+    dialog.set_transient_for(ctx.window.upgrade().as_ref());
+    dialog.present();
+}
+
+/// "About Stashee" from the primary menu.
+fn show_about(ctx: &Rc<Ctx>) {
+    let dialog = adw::AboutDialog::builder()
+        .application_name("Stashee")
+        .application_icon("dev.stashee.Terminal")
+        .developer_name("Stashee contributors")
+        .version(env!("CARGO_PKG_VERSION"))
+        .website("https://github.com/eeegoloauq/stashee-terminal")
+        .issue_url("https://github.com/eeegoloauq/stashee-terminal/issues")
+        .license_type(gtk::License::MitX11)
+        .comments("A glass tiling terminal workspace — shells never die by accident.")
+        .build();
+    dialog.present(Some(&ctx.toasts));
 }
 
 /// The "New SSH Pane" prompt: a host entry with recent-hosts suggestions
