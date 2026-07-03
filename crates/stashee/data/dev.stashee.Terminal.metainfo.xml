@@ -7,16 +7,10 @@
   <summary>Glass tiling terminal that stashes your workflows</summary>
   <description>
     <p>
-      Terminals live in named workflows and tile themselves. Every pane
-      runs inside tmux, so closing the app stashes a workflow instead of
-      killing it — reopen, and every shell is back exactly where it was.
-    </p>
-    <p>
-      Nothing to lose: quit, crash, update — sessions live in tmux, not
-      in the app. SSH panes are stashed too, surviving reboots and
-      dropped connections, and remote copy lands in the local clipboard.
-      No settings GUI, no plugins, no daemons of its own — the app does
-      very little, very well.
+      Terminals are grouped into named workflows and tile automatically.
+      Every pane runs inside tmux, so closing the app keeps every shell
+      running; reopen, and they are back exactly where they were. SSH
+      panes survive too.
     </p>
   </description>
   <launchable type="desktop-id">dev.stashee.Terminal.desktop</launchable>
