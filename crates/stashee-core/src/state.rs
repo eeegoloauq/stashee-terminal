@@ -74,6 +74,11 @@ impl State {
         self.recent_hosts.truncate(RECENT_HOSTS_KEPT);
     }
 
+    /// Drop `host` from the recent-hosts suggestions.
+    pub fn forget_host(&mut self, host: &str) {
+        self.recent_hosts.retain(|known| known != host);
+    }
+
     /// Reconcile saved workflows with the live sessions on our socket
     /// (the "Startup reconciliation" algorithm in ARCHITECTURE.md):
     /// stashed workflows drop local panes whose session died; live
@@ -367,6 +372,15 @@ mod tests {
         }
         assert_eq!(state.recent_hosts.len(), RECENT_HOSTS_KEPT);
         assert_eq!(state.recent_hosts[0], "host-19");
+    }
+
+    #[test]
+    fn forgotten_hosts_leave_the_suggestions() {
+        let mut state = State::default();
+        state.remember_host("e@alpha");
+        state.remember_host("e@beta");
+        state.forget_host("e@alpha");
+        assert_eq!(state.recent_hosts, ["e@beta"]);
     }
 
     #[test]
