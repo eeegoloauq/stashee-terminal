@@ -2,16 +2,16 @@
 
 # stashee
 
-A tiling terminal workspace for Linux.
-
-<img src="docs/shots/welcome.png" alt="stashee on first launch" width="85%">
-
-</div>
+**A tiling terminal workspace for Linux.**
 
 Terminals are grouped into named **workflows** and tile automatically.
 Every pane runs inside a tmux session, so closing the app **stashes** a
 workflow instead of killing it. Reopen, and every shell is back exactly
 where it was.
+
+<img src="docs/shots/welcome.png" alt="stashee on first launch" width="85%">
+
+</div>
 
 ## Why
 
@@ -26,7 +26,7 @@ where it was.
   GNOME Terminal and Ptyxis). No Electron, no webviews, no daemons.
 
 <p align="center">
-  <img src="docs/shots/agents.png" alt="three coding agents in a stashed workflow" width="90%">
+  <img src="docs/shots/dev.png" alt="three coding agents in a stashed workflow" width="90%">
   <br>
   <sub>Three coding agents in a stashed workflow. Closing the window kills none of them.</sub>
 </p>
