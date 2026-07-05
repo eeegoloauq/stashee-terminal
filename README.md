@@ -79,6 +79,12 @@ just install        # release build → ~/.local/bin/stashee (+ st symlink)
 At runtime Fedora Workstation needs nothing extra: GTK4, libadwaita,
 and VTE ship with it.
 
+## Contributing
+
+Issues and PRs are welcome. `just check` runs the full gate (fmt, clippy, tests) that CI
+expects. The scope is deliberately small, so for anything bigger than a fix, open an issue
+first so we can talk it over before you spend time on it.
+
 ## License
 
 [MIT](LICENSE).
