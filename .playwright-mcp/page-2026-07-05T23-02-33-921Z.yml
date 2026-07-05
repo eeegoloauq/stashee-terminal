@@ -1,0 +1,761 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e8]:
+        - link "Homepage" [ref=e10] [cursor=pointer]:
+          - /url: /
+          - img [ref=e11]
+        - generic [ref=e13]:
+          - navigation "Global" [ref=e16]:
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - button "Platform" [ref=e20] [cursor=pointer]:
+                  - text: Platform
+                  - img [ref=e21]
+              - listitem [ref=e23]:
+                - button "Solutions" [ref=e25] [cursor=pointer]:
+                  - text: Solutions
+                  - img [ref=e26]
+              - listitem [ref=e28]:
+                - button "Resources" [ref=e30] [cursor=pointer]:
+                  - text: Resources
+                  - img [ref=e31]
+              - listitem [ref=e33]:
+                - button "Open Source" [ref=e35] [cursor=pointer]:
+                  - text: Open Source
+                  - img [ref=e36]
+              - listitem [ref=e38]:
+                - button "Enterprise" [ref=e40] [cursor=pointer]:
+                  - text: Enterprise
+                  - img [ref=e41]
+              - listitem [ref=e43]:
+                - link "Pricing" [ref=e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+                  - generic [ref=e45]: Pricing
+          - generic [ref=e46]:
+            - button "Search or jump to…" [ref=e49] [cursor=pointer]:
+              - img [ref=e51]
+            - link "Sign in" [ref=e54] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Feeegoloauq%2Fstashee-terminal
+            - link "Sign up" [ref=e55] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E&source=header-repo&source_repo=eeegoloauq%2Fstashee-terminal
+            - button "Appearance settings" [ref=e58] [cursor=pointer]:
+              - img
+  - main [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e66]:
+          - img [ref=e67]
+          - link "eeegoloauq" [ref=e70] [cursor=pointer]:
+            - /url: /eeegoloauq
+          - generic [ref=e71]: /
+          - strong [ref=e72]:
+            - link "stashee-terminal" [ref=e73] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal
+          - generic [ref=e74]: Public
+        - generic [ref=e75]:
+          - list:
+            - listitem [ref=e76]:
+              - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                - /url: /login?return_to=%2Feeegoloauq%2Fstashee-terminal
+                - img [ref=e78]
+                - text: Notifications
+            - listitem [ref=e80]:
+              - link "Fork 0" [ref=e81] [cursor=pointer]:
+                - /url: /login?return_to=%2Feeegoloauq%2Fstashee-terminal
+                - img [ref=e82]
+                - text: Fork
+                - generic "0" [ref=e84]
+            - listitem [ref=e85]:
+              - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                - /url: /login?return_to=%2Feeegoloauq%2Fstashee-terminal
+                - img [ref=e88]
+                - text: Star
+                - generic "2 users starred this repository" [ref=e90]: "2"
+      - navigation "Repository" [ref=e91]:
+        - list [ref=e92]:
+          - listitem [ref=e93]:
+            - link "Code" [ref=e94] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal
+              - img [ref=e95]
+              - generic [ref=e97]: Code
+          - listitem [ref=e98]:
+            - link "Issues" [ref=e99] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/issues
+              - img [ref=e100]
+              - generic [ref=e103]: Issues
+          - listitem [ref=e104]:
+            - link "Pull requests" [ref=e105] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/pulls
+              - img [ref=e106]
+              - generic [ref=e108]: Pull requests
+          - listitem [ref=e109]:
+            - link "Actions" [ref=e110] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/actions
+              - img [ref=e111]
+              - generic [ref=e113]: Actions
+          - listitem [ref=e114]:
+            - link "Projects" [ref=e115] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/projects
+              - img [ref=e116]
+              - generic [ref=e118]: Projects
+          - listitem [ref=e119]:
+            - link "Security and quality" [ref=e120] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/security
+              - img [ref=e121]
+              - generic [ref=e123]: Security and quality
+          - listitem [ref=e124]:
+            - link "Insights" [ref=e125] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/pulse
+              - img [ref=e126]
+              - generic [ref=e128]: Insights
+    - generic [ref=e141]:
+      - heading "eeegoloauq/stashee-terminal" [level=1] [ref=e143]
+      - generic [ref=e144]:
+        - generic [ref=e147]:
+          - generic [ref=e148]:
+            - generic [ref=e149]:
+              - button "main branch" [ref=e151] [cursor=pointer]:
+                - generic [ref=e152]:
+                  - generic [ref=e154]:
+                    - img [ref=e156]
+                    - generic [ref=e159]: main
+                  - generic:
+                    - img
+              - generic [ref=e160]:
+                - link "1 Branch" [ref=e161] [cursor=pointer]:
+                  - /url: /eeegoloauq/stashee-terminal/branches
+                  - generic [ref=e162]:
+                    - generic:
+                      - img
+                    - generic [ref=e164]:
+                      - strong [ref=e165]: "1"
+                      - text: Branch
+                - link "9 Tags" [ref=e166] [cursor=pointer]:
+                  - /url: /eeegoloauq/stashee-terminal/tags
+                  - generic [ref=e167]:
+                    - generic:
+                      - img
+                    - generic [ref=e169]:
+                      - strong [ref=e170]: "9"
+                      - text: Tags
+            - generic [ref=e171]:
+              - generic [ref=e175]:
+                - img [ref=e177]
+                - combobox "Go to file" [ref=e179]
+              - button "Code" [ref=e180] [cursor=pointer]:
+                - generic [ref=e181]:
+                  - generic:
+                    - img
+                  - generic [ref=e182]: Code
+                  - generic:
+                    - img
+          - generic [ref=e183]:
+            - generic [ref=e184]:
+              - heading "Folders and files" [level=2] [ref=e185]
+              - table "Folders and files" [ref=e186]:
+                - rowgroup:
+                  - row "Name Last commit message Last commit date":
+                    - columnheader "Name"
+                    - columnheader "Last commit message":
+                      - generic "Last commit message"
+                    - columnheader "Last commit date":
+                      - generic "Last commit date"
+                - rowgroup [ref=e187]:
+                  - 'row "Latest commit eeegoloauq claude commits by eeegoloauq and commits by claude docs: rework README showcase — single hero, captioned workflow shot Open commit details success Commit 27cb333 · Jul 5, 20262 minutes ago History 38 Commits" [ref=e188]':
+                    - 'cell "Latest commit eeegoloauq claude commits by eeegoloauq and commits by claude docs: rework README showcase — single hero, captioned workflow shot Open commit details success Commit 27cb333 · Jul 5, 20262 minutes ago History 38 Commits" [ref=e189]':
+                      - generic [ref=e190]:
+                        - heading "Latest commit" [level=2] [ref=e191]
+                        - generic [ref=e192]:
+                          - generic [ref=e193]:
+                            - generic [ref=e195]:
+                              - img "eeegoloauq" [ref=e196]
+                              - img "claude" [ref=e197]
+                            - link "commits by eeegoloauq" [ref=e199] [cursor=pointer]:
+                              - /url: /eeegoloauq/stashee-terminal/commits?author=eeegoloauq
+                              - text: eeegoloauq
+                            - generic [ref=e200]: and
+                            - link "commits by claude" [ref=e202] [cursor=pointer]:
+                              - /url: /eeegoloauq/stashee-terminal/commits?author=claude
+                              - text: claude
+                          - generic [ref=e203]:
+                            - 'link "docs: rework README showcase — single hero, captioned workflow shot" [ref=e206] [cursor=pointer]':
+                              - /url: /eeegoloauq/stashee-terminal/commit/27cb333ce7c16593759c7e619bb6d3f2fa8fa97a
+                            - button "Open commit details" [ref=e207] [cursor=pointer]:
+                              - img [ref=e208]
+                            - button "success" [ref=e210] [cursor=pointer]:
+                              - img [ref=e211]
+                        - generic [ref=e213]:
+                          - generic [ref=e215]:
+                            - link "Commit 27cb333" [ref=e216] [cursor=pointer]:
+                              - /url: /eeegoloauq/stashee-terminal/commit/27cb333ce7c16593759c7e619bb6d3f2fa8fa97a
+                              - text: 27cb333
+                            - text: ·
+                            - generic "Jul 5, 2026, 11:00 PM UTC" [ref=e217]: Jul 5, 20262 minutes ago
+                          - generic [ref=e218]:
+                            - heading "History" [level=2] [ref=e219]
+                            - link "38 Commits" [ref=e220] [cursor=pointer]:
+                              - /url: /eeegoloauq/stashee-terminal/commits/main/
+                              - generic [ref=e221]:
+                                - generic:
+                                  - img
+                                - generic [ref=e222]: 38 Commits
+                  - row ".forgejo/workflows, (Directory) stashee v0.1.3 Jul 3, 20262 days ago" [ref=e223]:
+                    - cell ".forgejo/workflows, (Directory)" [ref=e224]:
+                      - generic [ref=e225]:
+                        - img [ref=e226]
+                        - link ".forgejo/workflows, (Directory)" [ref=e231] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/tree/main/.forgejo/workflows
+                          - text: .forgejo/workflows
+                    - cell "stashee v0.1.3" [ref=e232]:
+                      - link "stashee v0.1.3" [ref=e235] [cursor=pointer]:
+                        - /url: /eeegoloauq/stashee-terminal/commit/fe20f44fbb2765dad74011a2b29364e26e4aad86
+                    - cell "Jul 3, 20262 days ago" [ref=e236]:
+                      - generic [ref=e237]: Jul 3, 20262 days ago
+                  - 'row ".github, (Directory) Add community docs: code of conduct, contributing guide, issue and PR… Jul 5, 20263 hours ago" [ref=e238]':
+                    - cell ".github, (Directory)" [ref=e239]:
+                      - generic [ref=e240]:
+                        - img [ref=e241]
+                        - link ".github, (Directory)" [ref=e246] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/tree/main/.github
+                          - text: .github
+                    - 'cell "Add community docs: code of conduct, contributing guide, issue and PR…" [ref=e247]':
+                      - 'link "Add community docs: code of conduct, contributing guide, issue and PR…" [ref=e250] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/4678f395382f5fb63e4c0dc1950d8baa9b9342dd
+                    - cell "Jul 5, 20263 hours ago" [ref=e251]:
+                      - generic [ref=e252]: Jul 5, 20263 hours ago
+                  - row "crates, (Directory) stashee v0.1.11 Jul 5, 202614 hours ago" [ref=e253]:
+                    - cell "crates, (Directory)" [ref=e254]:
+                      - generic [ref=e255]:
+                        - img [ref=e256]
+                        - link "crates, (Directory)" [ref=e261] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/tree/main/crates
+                          - text: crates
+                    - cell "stashee v0.1.11" [ref=e262]:
+                      - link "stashee v0.1.11" [ref=e265] [cursor=pointer]:
+                        - /url: /eeegoloauq/stashee-terminal/commit/03cb37ab8f28dbdf46fbf60341af51d3acb2584b
+                    - cell "Jul 5, 202614 hours ago" [ref=e266]:
+                      - generic [ref=e267]: Jul 5, 202614 hours ago
+                  - 'row "docs/shots, (Directory) docs: rework README showcase — single hero, captioned workflow shot Jul 5, 20262 minutes ago" [ref=e268]':
+                    - cell "docs/shots, (Directory)" [ref=e269]:
+                      - generic [ref=e270]:
+                        - img [ref=e271]
+                        - link "docs/shots, (Directory)" [ref=e276] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/tree/main/docs/shots
+                          - text: docs/shots
+                    - 'cell "docs: rework README showcase — single hero, captioned workflow shot" [ref=e277]':
+                      - 'link "docs: rework README showcase — single hero, captioned workflow shot" [ref=e280] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/27cb333ce7c16593759c7e619bb6d3f2fa8fa97a
+                    - cell "Jul 5, 20262 minutes ago" [ref=e281]:
+                      - generic [ref=e282]: Jul 5, 20262 minutes ago
+                  - 'row "packaging, (Directory) aur: 0.1.11 Jul 5, 202614 hours ago" [ref=e283]':
+                    - cell "packaging, (Directory)" [ref=e284]:
+                      - generic [ref=e285]:
+                        - img [ref=e286]
+                        - link "packaging, (Directory)" [ref=e291] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/tree/main/packaging
+                          - text: packaging
+                    - 'cell "aur: 0.1.11" [ref=e292]':
+                      - 'link "aur: 0.1.11" [ref=e295] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/50d2aac3dd2f22baab36cea1ea9ef6c2d6b05e19
+                    - cell "Jul 5, 202614 hours ago" [ref=e296]:
+                      - generic [ref=e297]: Jul 5, 202614 hours ago
+                  - 'row "scripts, (Directory) release.sh: validate metainfo with --no-net Jul 3, 20262 days ago" [ref=e298]':
+                    - cell "scripts, (Directory)" [ref=e299]:
+                      - generic [ref=e300]:
+                        - img [ref=e301]
+                        - link "scripts, (Directory)" [ref=e306] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/tree/main/scripts
+                          - text: scripts
+                    - 'cell "release.sh: validate metainfo with --no-net" [ref=e307]':
+                      - 'link "release.sh: validate metainfo with --no-net" [ref=e310] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/1944ff57d61d33aa1811a036dad714e5af8267e1
+                    - cell "Jul 3, 20262 days ago" [ref=e311]:
+                      - generic [ref=e312]: Jul 3, 20262 days ago
+                  - row ".gitignore, (File) stashee v0.1.3 Jul 3, 20262 days ago" [ref=e313]:
+                    - cell ".gitignore, (File)" [ref=e314]:
+                      - generic [ref=e315]:
+                        - img [ref=e316]
+                        - link ".gitignore, (File)" [ref=e321] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/.gitignore
+                          - text: .gitignore
+                    - cell "stashee v0.1.3" [ref=e322]:
+                      - link "stashee v0.1.3" [ref=e325] [cursor=pointer]:
+                        - /url: /eeegoloauq/stashee-terminal/commit/fe20f44fbb2765dad74011a2b29364e26e4aad86
+                    - cell "Jul 3, 20262 days ago" [ref=e326]:
+                      - generic [ref=e327]: Jul 3, 20262 days ago
+                  - 'row "AGENTS.md, (Symlink to file) AGENTS.md: symlink to CLAUDE.md Jul 5, 202615 hours ago" [ref=e328]':
+                    - cell "AGENTS.md, (Symlink to file)" [ref=e329]:
+                      - generic [ref=e330]:
+                        - img [ref=e331]
+                        - link "AGENTS.md, (Symlink to file)" [ref=e336] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/AGENTS.md
+                          - text: AGENTS.md
+                    - 'cell "AGENTS.md: symlink to CLAUDE.md" [ref=e337]':
+                      - 'link "AGENTS.md: symlink to CLAUDE.md" [ref=e340] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/c8170111c3d6819fcc62e770ae306f54e0bb1676
+                    - cell "Jul 5, 202615 hours ago" [ref=e341]:
+                      - generic [ref=e342]: Jul 5, 202615 hours ago
+                  - 'row "CODE_OF_CONDUCT.md, (File) Add community docs: code of conduct, contributing guide, issue and PR… Jul 5, 20263 hours ago" [ref=e343]':
+                    - cell "CODE_OF_CONDUCT.md, (File)" [ref=e344]:
+                      - generic [ref=e345]:
+                        - img [ref=e346]
+                        - link "CODE_OF_CONDUCT.md, (File)" [ref=e351] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/CODE_OF_CONDUCT.md
+                          - text: CODE_OF_CONDUCT.md
+                    - 'cell "Add community docs: code of conduct, contributing guide, issue and PR…" [ref=e352]':
+                      - 'link "Add community docs: code of conduct, contributing guide, issue and PR…" [ref=e355] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/4678f395382f5fb63e4c0dc1950d8baa9b9342dd
+                    - cell "Jul 5, 20263 hours ago" [ref=e356]:
+                      - generic [ref=e357]: Jul 5, 20263 hours ago
+                  - 'row "CONTRIBUTING.md, (File) Add community docs: code of conduct, contributing guide, issue and PR… Jul 5, 20263 hours ago" [ref=e358]':
+                    - cell "CONTRIBUTING.md, (File)" [ref=e359]:
+                      - generic [ref=e360]:
+                        - img [ref=e361]
+                        - link "CONTRIBUTING.md, (File)" [ref=e366] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/CONTRIBUTING.md
+                          - text: CONTRIBUTING.md
+                    - 'cell "Add community docs: code of conduct, contributing guide, issue and PR…" [ref=e367]':
+                      - 'link "Add community docs: code of conduct, contributing guide, issue and PR…" [ref=e370] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/4678f395382f5fb63e4c0dc1950d8baa9b9342dd
+                    - cell "Jul 5, 20263 hours ago" [ref=e371]:
+                      - generic [ref=e372]: Jul 5, 20263 hours ago
+                  - row "Cargo.lock, (File) stashee v0.1.11 Jul 5, 202614 hours ago" [ref=e373]:
+                    - cell "Cargo.lock, (File)" [ref=e374]:
+                      - generic [ref=e375]:
+                        - img [ref=e376]
+                        - link "Cargo.lock, (File)" [ref=e381] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/Cargo.lock
+                          - text: Cargo.lock
+                    - cell "stashee v0.1.11" [ref=e382]:
+                      - link "stashee v0.1.11" [ref=e385] [cursor=pointer]:
+                        - /url: /eeegoloauq/stashee-terminal/commit/03cb37ab8f28dbdf46fbf60341af51d3acb2584b
+                    - cell "Jul 5, 202614 hours ago" [ref=e386]:
+                      - generic [ref=e387]: Jul 5, 202614 hours ago
+                  - row "Cargo.toml, (File) stashee v0.1.11 Jul 5, 202614 hours ago" [ref=e388]:
+                    - cell "Cargo.toml, (File)" [ref=e389]:
+                      - generic [ref=e390]:
+                        - img [ref=e391]
+                        - link "Cargo.toml, (File)" [ref=e396] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/Cargo.toml
+                          - text: Cargo.toml
+                    - cell "stashee v0.1.11" [ref=e397]:
+                      - link "stashee v0.1.11" [ref=e400] [cursor=pointer]:
+                        - /url: /eeegoloauq/stashee-terminal/commit/03cb37ab8f28dbdf46fbf60341af51d3acb2584b
+                    - cell "Jul 5, 202614 hours ago" [ref=e401]:
+                      - generic [ref=e402]: Jul 5, 202614 hours ago
+                  - row "LICENSE, (File) stashee v0.1.3 Jul 3, 20262 days ago" [ref=e403]:
+                    - cell "LICENSE, (File)" [ref=e404]:
+                      - generic [ref=e405]:
+                        - img [ref=e406]
+                        - link "LICENSE, (File)" [ref=e411] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/LICENSE
+                          - text: LICENSE
+                    - cell "stashee v0.1.3" [ref=e412]:
+                      - link "stashee v0.1.3" [ref=e415] [cursor=pointer]:
+                        - /url: /eeegoloauq/stashee-terminal/commit/fe20f44fbb2765dad74011a2b29364e26e4aad86
+                    - cell "Jul 3, 20262 days ago" [ref=e416]:
+                      - generic [ref=e417]: Jul 3, 20262 days ago
+                  - 'row "README.md, (File) docs: rework README showcase — single hero, captioned workflow shot Jul 5, 20262 minutes ago" [ref=e418]':
+                    - cell "README.md, (File)" [ref=e419]:
+                      - generic [ref=e420]:
+                        - img [ref=e421]
+                        - link "README.md, (File)" [ref=e426] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/README.md
+                          - text: README.md
+                    - 'cell "docs: rework README showcase — single hero, captioned workflow shot" [ref=e427]':
+                      - 'link "docs: rework README showcase — single hero, captioned workflow shot" [ref=e430] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/27cb333ce7c16593759c7e619bb6d3f2fa8fa97a
+                    - cell "Jul 5, 20262 minutes ago" [ref=e431]:
+                      - generic [ref=e432]: Jul 5, 20262 minutes ago
+                  - 'row "SECURITY.md, (File) docs: add security policy and contributing notes Jul 5, 202613 hours ago" [ref=e433]':
+                    - cell "SECURITY.md, (File)" [ref=e434]:
+                      - generic [ref=e435]:
+                        - img [ref=e436]
+                        - link "SECURITY.md, (File)" [ref=e441] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/SECURITY.md
+                          - text: SECURITY.md
+                    - 'cell "docs: add security policy and contributing notes" [ref=e442]':
+                      - 'link "docs: add security policy and contributing notes" [ref=e445] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/539c37e592ac786cee0212dcc1e4a5a6f7fc2338
+                    - cell "Jul 5, 202613 hours ago" [ref=e446]:
+                      - generic [ref=e447]: Jul 5, 202613 hours ago
+                  - 'row "justfile, (File) packaging: PNG icons for GNOME Software, shorter descriptions Jul 3, 20262 days ago" [ref=e448]':
+                    - cell "justfile, (File)" [ref=e449]:
+                      - generic [ref=e450]:
+                        - img [ref=e451]
+                        - link "justfile, (File)" [ref=e456] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/justfile
+                          - text: justfile
+                    - 'cell "packaging: PNG icons for GNOME Software, shorter descriptions" [ref=e457]':
+                      - 'link "packaging: PNG icons for GNOME Software, shorter descriptions" [ref=e460] [cursor=pointer]':
+                        - /url: /eeegoloauq/stashee-terminal/commit/d0cc6e9b9cbe4560fbd9c793f4c9a6ada42ff657
+                    - cell "Jul 3, 20262 days ago" [ref=e461]:
+                      - generic [ref=e462]: Jul 3, 20262 days ago
+                  - row "rust-toolchain.toml, (File) stashee v0.1.3 Jul 3, 20262 days ago" [ref=e463]:
+                    - cell "rust-toolchain.toml, (File)" [ref=e464]:
+                      - generic [ref=e465]:
+                        - img [ref=e466]
+                        - link "rust-toolchain.toml, (File)" [ref=e471] [cursor=pointer]:
+                          - /url: /eeegoloauq/stashee-terminal/blob/main/rust-toolchain.toml
+                          - text: rust-toolchain.toml
+                    - cell "stashee v0.1.3" [ref=e472]:
+                      - link "stashee v0.1.3" [ref=e475] [cursor=pointer]:
+                        - /url: /eeegoloauq/stashee-terminal/commit/fe20f44fbb2765dad74011a2b29364e26e4aad86
+                    - cell "Jul 3, 20262 days ago" [ref=e476]:
+                      - generic [ref=e477]: Jul 3, 20262 days ago
+            - generic [ref=e479]:
+              - generic [ref=e480]:
+                - heading "Repository files navigation" [level=2] [ref=e481]
+                - navigation "Repository files" [ref=e482]:
+                  - list [ref=e483]:
+                    - listitem [ref=e484]:
+                      - link "README" [ref=e485] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e487]
+                        - generic [ref=e489]: README
+                    - listitem [ref=e490]:
+                      - link "Code of conduct" [ref=e491] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e493]
+                        - generic [ref=e495]: Code of conduct
+                    - listitem [ref=e496]:
+                      - link "Contributing" [ref=e497] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e499]
+                        - generic [ref=e501]: Contributing
+                    - listitem [ref=e502]:
+                      - link "MIT license" [ref=e503] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e505]
+                        - generic [ref=e507]: MIT license
+                    - listitem [ref=e508]:
+                      - link "Security" [ref=e509] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e511]
+                        - generic [ref=e513]: Security
+                - button "Outline" [ref=e514] [cursor=pointer]:
+                  - img [ref=e515]
+              - article [ref=e518]:
+                - generic [ref=e519]:
+                  - generic [ref=e520]:
+                    - heading "stashee" [level=1] [ref=e521]
+                    - 'link "Permalink: stashee" [ref=e522] [cursor=pointer]':
+                      - /url: "#stashee"
+                      - img [ref=e523]
+                  - paragraph [ref=e525]: A tiling terminal workspace for Linux.
+                  - link "stashee on first launch" [ref=e526] [cursor=pointer]:
+                    - /url: /eeegoloauq/stashee-terminal/blob/main/docs/shots/welcome.png
+                    - img "stashee on first launch" [ref=e527]
+                - paragraph [ref=e528]:
+                  - text: Terminals are grouped into named
+                  - strong [ref=e529]: workflows
+                  - text: and tile automatically. Every pane runs inside a tmux session, so closing the app
+                  - strong [ref=e530]: stashes
+                  - text: a workflow instead of killing it. Reopen, and every shell is back exactly where it was.
+                - generic [ref=e531]:
+                  - heading "Why" [level=2] [ref=e532]
+                  - 'link "Permalink: Why" [ref=e533] [cursor=pointer]':
+                    - /url: "#why"
+                    - img [ref=e534]
+                - list [ref=e536]:
+                  - listitem [ref=e537]: Sessions live in tmux, not in the app. Quitting, crashing, or updating loses nothing; the window is only a client.
+                  - listitem [ref=e538]: "No layout management. New panes tile automatically: up to three columns, then rows, always evenly split."
+                  - listitem [ref=e539]: SSH panes are stashed too. A pane on a remote host survives reboots and dropped connections, and remote copy lands in the local clipboard.
+                  - listitem [ref=e540]: Native. Rust, GTK4, libadwaita, and VTE (the terminal engine behind GNOME Terminal and Ptyxis). No Electron, no webviews, no daemons.
+                - paragraph [ref=e541]:
+                  - link "three coding agents in a stashed workflow" [ref=e542] [cursor=pointer]:
+                    - /url: /eeegoloauq/stashee-terminal/blob/main/docs/shots/agents.png
+                    - img "three coding agents in a stashed workflow" [ref=e543]
+                  - subscript [ref=e544]: Three coding agents in a stashed workflow. Closing the window kills none of them.
+                - generic [ref=e545]:
+                  - heading "Usage" [level=2] [ref=e546]
+                  - 'link "Permalink: Usage" [ref=e547] [cursor=pointer]':
+                    - /url: "#usage"
+                    - img [ref=e548]
+                - table [ref=e551]:
+                  - rowgroup [ref=e552]:
+                    - row [ref=e553]:
+                      - columnheader [ref=e554]
+                      - columnheader [ref=e555]
+                  - rowgroup [ref=e556]:
+                    - row "stashee work open the \"work\" workflow from any shell" [ref=e557]:
+                      - cell "stashee work" [ref=e558]:
+                        - code [ref=e559]: stashee work
+                      - cell "open the \"work\" workflow from any shell" [ref=e560]
+                    - row "Ctrl+T new pane" [ref=e561]:
+                      - cell "Ctrl+T" [ref=e562]:
+                        - code [ref=e563]: Ctrl+T
+                      - cell "new pane" [ref=e564]
+                    - row "Ctrl+Shift+T new SSH pane" [ref=e565]:
+                      - cell "Ctrl+Shift+T" [ref=e566]:
+                        - code [ref=e567]: Ctrl+Shift+T
+                      - cell "new SSH pane" [ref=e568]
+                    - row "Alt+1…9 switch workflow" [ref=e569]:
+                      - cell "Alt+1…9" [ref=e570]:
+                        - code [ref=e571]: Alt+1…9
+                      - cell "switch workflow" [ref=e572]
+                    - row "Ctrl+W close pane (the only way a pane dies on purpose)" [ref=e573]:
+                      - cell "Ctrl+W" [ref=e574]:
+                        - code [ref=e575]: Ctrl+W
+                      - cell "close pane (the only way a pane dies on purpose)" [ref=e576]
+                    - row "stashee config open the config file; changes apply live" [ref=e577]:
+                      - cell "stashee config" [ref=e578]:
+                        - code [ref=e579]: stashee config
+                      - cell "open the config file; changes apply live" [ref=e580]
+                - paragraph [ref=e581]: There is no settings GUI, no plugin system, no theme gallery. The scope is deliberately small.
+                - generic [ref=e582]:
+                  - heading "Install" [level=2] [ref=e583]
+                  - 'link "Permalink: Install" [ref=e584] [cursor=pointer]':
+                    - /url: "#install"
+                    - img [ref=e585]
+                - paragraph [ref=e587]:
+                  - text: Fedora, via
+                  - link "COPR" [ref=e588] [cursor=pointer]:
+                    - /url: https://copr.fedorainfracloud.org/coprs/eeegoloauq/stashee/
+                  - text: ":"
+                - generic [ref=e589]:
+                  - generic [ref=e590]: sudo dnf copr enable eeegoloauq/stashee sudo dnf install stashee
+                  - button "Copy code to clipboard" [ref=e592] [cursor=pointer]:
+                    - img [ref=e593]
+                - paragraph [ref=e596]:
+                  - text: Each release on the
+                  - link "releases page" [ref=e597] [cursor=pointer]:
+                    - /url: https://github.com/eeegoloauq/stashee-terminal/releases
+                  - text: also ships an
+                  - code [ref=e598]: .rpm
+                  - text: for Fedora and a
+                  - code [ref=e599]: .pkg.tar.zst
+                  - text: "for Arch:"
+                - generic [ref=e600]:
+                  - generic [ref=e601]:
+                    - generic [ref=e602]: "# Fedora"
+                    - text: sudo dnf install ./stashee-*.rpm
+                    - generic [ref=e603]: "# Arch"
+                    - text: sudo pacman -U ./stashee-*.pkg.tar.zst
+                  - button "Copy code to clipboard" [ref=e605] [cursor=pointer]:
+                    - img [ref=e606]
+                - paragraph [ref=e609]: tmux is required; install it with your package manager if it is not already present.
+                - generic [ref=e610]:
+                  - heading "Build" [level=2] [ref=e611]
+                  - 'link "Permalink: Build" [ref=e612] [cursor=pointer]':
+                    - /url: "#build"
+                    - img [ref=e613]
+                - generic [ref=e615]:
+                  - generic [ref=e616]:
+                    - generic [ref=e617]: "# Fedora"
+                    - text: sudo dnf install gcc rust cargo gtk4-devel libadwaita-devel vte291-gtk4-devel git clone https://github.com/eeegoloauq/stashee-terminal && cd stashee-terminal just install
+                    - generic [ref=e618]: "# release build → ~/.local/bin/stashee (+ st symlink)"
+                  - button "Copy code to clipboard" [ref=e620] [cursor=pointer]:
+                    - img [ref=e621]
+                - paragraph [ref=e624]: "At runtime Fedora Workstation needs nothing extra: GTK4, libadwaita, and VTE ship with it."
+                - generic [ref=e625]:
+                  - heading "Contributing" [level=2] [ref=e626]
+                  - 'link "Permalink: Contributing" [ref=e627] [cursor=pointer]':
+                    - /url: "#contributing"
+                    - img [ref=e628]
+                - paragraph [ref=e630]:
+                  - text: Issues and PRs are welcome — see
+                  - link "CONTRIBUTING.md" [ref=e631] [cursor=pointer]:
+                    - /url: /eeegoloauq/stashee-terminal/blob/main/CONTRIBUTING.md
+                  - text: for the build deps and guidelines.
+                  - code [ref=e632]: just check
+                  - text: runs the full gate (fmt, clippy, tests) that CI expects. The scope is deliberately small, so for anything bigger than a fix, open an issue first so we can talk it over before you spend time on it.
+                - generic [ref=e633]:
+                  - heading "License" [level=2] [ref=e634]
+                  - 'link "Permalink: License" [ref=e635] [cursor=pointer]':
+                    - /url: "#license"
+                    - img [ref=e636]
+                - paragraph [ref=e638]:
+                  - link "MIT" [ref=e639] [cursor=pointer]:
+                    - /url: /eeegoloauq/stashee-terminal/blob/main/LICENSE
+                  - text: .
+        - generic [ref=e643]:
+          - generic [ref=e646]:
+            - heading "About" [level=2] [ref=e647]
+            - paragraph [ref=e648]: Tiling terminal workspace for Linux that never loses a shell — panes live in tmux, so closing the app just stashes your workflows.
+            - heading "Topics" [level=3] [ref=e649]
+            - generic [ref=e651]:
+              - link "linux" [ref=e652] [cursor=pointer]:
+                - /url: /topics/linux
+              - link "rust" [ref=e653] [cursor=pointer]:
+                - /url: /topics/rust
+              - link "tmux" [ref=e654] [cursor=pointer]:
+                - /url: /topics/tmux
+              - link "terminal" [ref=e655] [cursor=pointer]:
+                - /url: /topics/terminal
+              - link "fedora" [ref=e656] [cursor=pointer]:
+                - /url: /topics/fedora
+              - link "tiling" [ref=e657] [cursor=pointer]:
+                - /url: /topics/tiling
+              - link "gnome" [ref=e658] [cursor=pointer]:
+                - /url: /topics/gnome
+              - link "wayland" [ref=e659] [cursor=pointer]:
+                - /url: /topics/wayland
+              - link "vte" [ref=e660] [cursor=pointer]:
+                - /url: /topics/vte
+              - link "terminal-emulator" [ref=e661] [cursor=pointer]:
+                - /url: /topics/terminal-emulator
+              - link "gtk4" [ref=e662] [cursor=pointer]:
+                - /url: /topics/gtk4
+              - link "libadwaita" [ref=e663] [cursor=pointer]:
+                - /url: /topics/libadwaita
+            - heading "Resources" [level=3] [ref=e664]
+            - link "Readme" [ref=e666] [cursor=pointer]:
+              - /url: "#readme-ov-file"
+              - img [ref=e667]
+              - text: Readme
+            - heading "License" [level=3] [ref=e669]
+            - link "MIT license" [ref=e671] [cursor=pointer]:
+              - /url: "#MIT-1-ov-file"
+              - img [ref=e672]
+              - text: MIT license
+            - heading "Code of conduct" [level=3] [ref=e674]
+            - link "Code of conduct" [ref=e676] [cursor=pointer]:
+              - /url: "#coc-ov-file"
+              - img [ref=e677]
+              - text: Code of conduct
+            - heading "Contributing" [level=3] [ref=e679]
+            - link "Contributing" [ref=e681] [cursor=pointer]:
+              - /url: "#contributing-ov-file"
+              - img [ref=e682]
+              - text: Contributing
+            - heading "Security policy" [level=3] [ref=e684]
+            - link "Security policy" [ref=e686] [cursor=pointer]:
+              - /url: "#security-ov-file"
+              - img [ref=e687]
+              - text: Security policy
+            - link "Activity" [ref=e690] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/activity
+              - img [ref=e691]
+              - text: Activity
+            - heading "Stars" [level=3] [ref=e693]
+            - link "2 stars" [ref=e695] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/stargazers
+              - img [ref=e696]
+              - strong [ref=e698]: "2"
+              - text: stars
+            - heading "Watchers" [level=3] [ref=e699]
+            - link "0 watching" [ref=e701] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/watchers
+              - img [ref=e702]
+              - strong [ref=e704]: "0"
+              - text: watching
+            - heading "Forks" [level=3] [ref=e705]
+            - link "0 forks" [ref=e707] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/forks
+              - img [ref=e708]
+              - strong [ref=e710]: "0"
+              - text: forks
+            - link "Report repository" [ref=e712] [cursor=pointer]:
+              - /url: /contact/report-content?content_url=https%3A%2F%2Fgithub.com%2Feeegoloauq%2Fstashee-terminal&report=eeegoloauq+%28user%29
+          - generic [ref=e714]:
+            - heading "Releases 9" [level=2] [ref=e715]:
+              - link "Releases 9" [ref=e716] [cursor=pointer]:
+                - /url: /eeegoloauq/stashee-terminal/releases
+                - text: Releases
+                - generic "9" [ref=e717]
+            - link "v0.1.11 Latest Jul 5, 202614 hours ago" [ref=e718] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/releases/tag/v0.1.11
+              - img [ref=e719]
+              - generic [ref=e721]:
+                - generic [ref=e722]:
+                  - generic [ref=e723]: v0.1.11
+                  - 'generic "Label: Latest" [ref=e724]': Latest
+                - generic [ref=e725]: Jul 5, 202614 hours ago
+            - link "+ 8 releases" [ref=e727] [cursor=pointer]:
+              - /url: /eeegoloauq/stashee-terminal/releases
+          - generic [ref=e729]:
+            - heading "Packages" [level=2] [ref=e730]:
+              - link "Packages" [ref=e731] [cursor=pointer]:
+                - /url: /users/eeegoloauq/packages?repo_name=stashee-terminal
+            - generic [ref=e732]: No packages published
+          - generic [ref=e734]:
+            - heading "Contributors 2" [level=2] [ref=e735]:
+              - link "Contributors 2" [ref=e736] [cursor=pointer]:
+                - /url: /eeegoloauq/stashee-terminal/graphs/contributors
+                - text: Contributors
+                - generic "2" [ref=e737]
+            - list [ref=e738]:
+              - listitem [ref=e739]:
+                - link "@eeegoloauq" [ref=e740] [cursor=pointer]:
+                  - /url: https://github.com/eeegoloauq
+                  - img "@eeegoloauq" [ref=e741]
+                - link "eeegoloauq Егор" [ref=e743] [cursor=pointer]:
+                  - /url: https://github.com/eeegoloauq
+                  - strong [ref=e744]: eeegoloauq
+                  - text: Егор
+              - listitem [ref=e745]:
+                - link "@claude" [ref=e746] [cursor=pointer]:
+                  - /url: https://github.com/claude
+                  - img "@claude" [ref=e747]
+                - link "claude Claude" [ref=e749] [cursor=pointer]:
+                  - /url: https://github.com/claude
+                  - strong [ref=e750]: claude
+                  - text: Claude
+          - generic [ref=e752]:
+            - heading "Languages" [level=2] [ref=e753]
+            - list [ref=e760]:
+              - listitem [ref=e761]:
+                - link "Rust 94.4%" [ref=e762] [cursor=pointer]:
+                  - /url: /eeegoloauq/stashee-terminal/search?l=rust
+                  - img [ref=e763]
+                  - generic [ref=e765]: Rust
+                  - generic [ref=e766]: 94.4%
+              - listitem [ref=e767]:
+                - link "Shell 3.8%" [ref=e768] [cursor=pointer]:
+                  - /url: /eeegoloauq/stashee-terminal/search?l=shell
+                  - img [ref=e769]
+                  - generic [ref=e771]: Shell
+                  - generic [ref=e772]: 3.8%
+              - listitem [ref=e773]:
+                - link "Just 1.1%" [ref=e774] [cursor=pointer]:
+                  - /url: /eeegoloauq/stashee-terminal/search?l=just
+                  - img [ref=e775]
+                  - generic [ref=e777]: Just
+                  - generic [ref=e778]: 1.1%
+              - listitem [ref=e779]:
+                - link "CSS 0.7%" [ref=e780] [cursor=pointer]:
+                  - /url: /eeegoloauq/stashee-terminal/search?l=css
+                  - img [ref=e781]
+                  - generic [ref=e783]: CSS
+                  - generic [ref=e784]: 0.7%
+  - contentinfo [ref=e786]:
+    - heading "Footer" [level=2] [ref=e787]
+    - generic [ref=e788]:
+      - generic [ref=e789]:
+        - link "GitHub Homepage" [ref=e790] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e791]
+        - generic [ref=e793]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e794]:
+        - heading "Footer navigation" [level=3] [ref=e795]
+        - list "Footer navigation" [ref=e796]:
+          - listitem [ref=e797]:
+            - link "Terms" [ref=e798] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e799]:
+            - link "Privacy" [ref=e800] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e801]:
+            - link "Security" [ref=e802] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e803]:
+            - link "Status" [ref=e804] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e805]:
+            - link "Community" [ref=e806] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e807]:
+            - link "Docs" [ref=e808] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e809]:
+            - link "Contact" [ref=e810] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e811]:
+            - button "Manage cookies" [ref=e813] [cursor=pointer]
+          - listitem [ref=e814]:
+            - button "Do not share my personal information" [ref=e816] [cursor=pointer]
