@@ -763,18 +763,12 @@ fn ssh_host_dialog(ctx: &Rc<Ctx>) {
         let list = gtk::ListBox::new();
         list.add_css_class("boxed-list");
         list.set_selection_mode(gtk::SelectionMode::None);
-        for host in &recent {
-            let label = gtk::Label::new(Some(host));
-            label.set_xalign(0.0);
-            label.set_margin_top(8);
-            label.set_margin_bottom(8);
-            label.set_margin_start(12);
-            label.set_margin_end(12);
-            list.append(&label);
-        }
         // Rows are removable, so activation and removal share one
         // mutable list that stays aligned with the rows' indices.
         let hosts = Rc::new(RefCell::new(recent));
+        for host in hosts.borrow().iter() {
+            list.append(&host_row(ctx, host, &hosts, &list));
+        }
         {
             let ctx = ctx.clone();
             let dialog = dialog.clone();
@@ -787,7 +781,6 @@ fn ssh_host_dialog(ctx: &Rc<Ctx>) {
                 }
             });
         }
-        attach_remove_menu(ctx, &list, &hosts);
         content.append(&list);
     }
 
@@ -826,69 +819,56 @@ fn host_is_usable(host: &str) -> bool {
     !host.is_empty() && !host.starts_with('-')
 }
 
-/// Right-click menu on a recent-host row: "Remove" drops the host from
-/// the suggestions (state and dialog alike). Same pattern as the
-/// sidebar's workflow menu.
-fn attach_remove_menu(ctx: &Rc<Ctx>, list: &gtk::ListBox, hosts: &Rc<RefCell<Vec<String>>>) {
-    let remove = gio::SimpleAction::new("remove", Some(glib::VariantTy::INT32));
+/// One recent-host suggestion: the host label and a trash button.
+/// Removing drops the host from the suggestions (state and dialog
+/// alike); the button owns its clicks, so the rest of the row still
+/// activates to connect.
+fn host_row(
+    ctx: &Rc<Ctx>,
+    host: &str,
+    hosts: &Rc<RefCell<Vec<String>>>,
+    list: &gtk::ListBox,
+) -> gtk::ListBoxRow {
+    let label = gtk::Label::new(Some(host));
+    label.set_xalign(0.0);
+    label.set_hexpand(true);
+    label.set_ellipsize(gtk::pango::EllipsizeMode::End);
+
+    let remove = gtk::Button::from_icon_name("user-trash-symbolic");
+    remove.add_css_class("flat");
+    remove.set_tooltip_text(Some("Remove"));
+    remove.set_valign(gtk::Align::Center);
+
+    let content = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    content.set_margin_start(12);
+    content.set_margin_end(6);
+    content.set_margin_top(2);
+    content.set_margin_bottom(2);
+    content.append(&label);
+    content.append(&remove);
+
+    let row = gtk::ListBoxRow::new();
+    row.set_child(Some(&content));
     {
         let ctx = ctx.clone();
         let hosts = hosts.clone();
         let list = list.downgrade();
-        remove.connect_activate(move |_, parameter| {
-            let Some(index) = parameter.and_then(glib::Variant::get::<i32>) else {
-                return;
-            };
+        let row = row.downgrade();
+        let host = host.to_owned();
+        remove.connect_clicked(move |_| {
             let Some(list) = list.upgrade() else {
                 return;
             };
-            let Ok(position) = usize::try_from(index) else {
-                return;
-            };
-            let host = {
-                let mut hosts = hosts.borrow_mut();
-                if position >= hosts.len() {
-                    return;
-                }
-                hosts.remove(position)
-            };
-            if let Some(row) = list.row_at_index(index) {
+            if let Some(row) = row.upgrade() {
                 list.remove(&row);
             }
+            hosts.borrow_mut().retain(|known| known != &host);
             list.set_visible(!hosts.borrow().is_empty());
             ctx.state.borrow_mut().forget_host(&host);
             save(&ctx);
         });
     }
-    let group = gio::SimpleActionGroup::new();
-    group.add_action(&remove);
-    list.insert_action_group("recent", Some(&group));
-
-    let gesture = gtk::GestureClick::new();
-    gesture.set_button(gtk::gdk::BUTTON_SECONDARY);
-    gesture.connect_pressed(move |gesture, _, x, y| {
-        let Some(list) = gesture.widget().and_downcast::<gtk::ListBox>() else {
-            return;
-        };
-        let Some(row) = list.row_at_y(y as i32) else {
-            return;
-        };
-        let menu = gio::Menu::new();
-        let item = gio::MenuItem::new(Some("Remove"), None);
-        item.set_action_and_target_value(Some("recent.remove"), Some(&row.index().to_variant()));
-        menu.append_item(&item);
-
-        let popover = gtk::PopoverMenu::from_model(Some(&menu));
-        popover.set_parent(&list);
-        popover.set_pointing_to(Some(&gtk::gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
-        popover.connect_closed(|popover| {
-            // unparenting inside the signal warns; defer one tick
-            let popover = popover.clone();
-            glib::idle_add_local_once(move || popover.unparent());
-        });
-        popover.popup();
-    });
-    list.add_controller(gesture);
+    row
 }
 
 fn remove_pane(ctx: &Rc<Ctx>, id: &str) {
