@@ -81,9 +81,10 @@ and VTE ship with it.
 
 ## Contributing
 
-Issues and PRs are welcome. `just check` runs the full gate (fmt, clippy, tests) that CI
-expects. The scope is deliberately small, so for anything bigger than a fix, open an issue
-first so we can talk it over before you spend time on it.
+Issues and PRs are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the build deps and
+guidelines. `just check` runs the full gate (fmt, clippy, tests) that CI expects. The scope is
+deliberately small, so for anything bigger than a fix, open an issue first so we can talk it
+over before you spend time on it.
 
 ## License
 

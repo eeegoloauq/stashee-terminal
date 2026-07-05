@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an improvement — after reading the scope note
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The scope of stashee is deliberately small — no settings GUI, no plugins,
+        no layout management. Ideas that fit that philosophy are very welcome;
+        ideas that fight it will get a friendly "no". See
+        [CONTRIBUTING.md](../../CONTRIBUTING.md) for the reasoning.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation where you miss this feature, not just the feature itself.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How you imagine it working. Rough is fine.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: I've read the scope note above and think this fits stashee's deliberately small scope
+          required: true

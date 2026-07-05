@@ -1,0 +1,58 @@
+name: Bug report
+description: Something broke — a crash, a rendering glitch, a lost pane
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! Most stashee bugs are environment-specific, so the fields below
+        really do matter for reproducing yours.
+  - type: input
+    id: distro
+    attributes:
+      label: Distro and version
+      placeholder: Fedora 42 / Arch / Ubuntu 24.04
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install stashee?
+      options:
+        - COPR (dnf)
+        - .rpm from the releases page
+        - .pkg.tar.zst from the releases page
+        - Built from source
+    validations:
+      required: true
+  - type: dropdown
+    id: session
+    attributes:
+      label: Session type
+      options:
+        - Wayland
+        - X11
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: stashee and tmux versions
+      description: "`stashee --version` and `tmux -V`"
+      placeholder: stashee 0.4.1, tmux 3.5a
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Steps to reproduce, what you expected, and what happened instead. If a pane or workflow was lost, mention whether the tmux session survived (`tmux ls`).
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Terminal output
+      description: If stashee crashed or printed warnings, run it from a shell (`stashee`) and paste the output.
+      render: text
