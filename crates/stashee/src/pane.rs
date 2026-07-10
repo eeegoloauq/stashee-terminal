@@ -46,6 +46,13 @@ pub struct Pane {
     /// pending: there is no live client, so `Ctrl+W` cannot rely on a
     /// client exit to drive the removal.
     pub reconnecting: Rc<Cell<bool>>,
+    /// pid of the pane's direct child (the OSC 52 proxy, or the bare
+    /// command when the proxy could not wrap); `None` between an exit
+    /// and the next spawn. The post-resume transport probe
+    /// (window.rs) sends it SIGWINCH.
+    pub child_pid: Rc<Cell<Option<gtk::glib::Pid>>>,
+    /// Only SSH panes have a transport worth probing after resume.
+    pub is_ssh: bool,
 }
 
 /// Shared by all panes: `on_exited` fires when the pane's process ends
@@ -108,6 +115,7 @@ pub fn build(
     let banner = adw::Banner::new(NO_TMUX_BANNER);
     let ssh_fallback = Rc::new(Cell::new(false));
     let reconnecting = Rc::new(Cell::new(false));
+    let child_pid = Rc::new(Cell::new(None));
 
     let id = spec.id.clone();
     let on_exited = callbacks.on_exited.clone();
@@ -120,12 +128,14 @@ pub fn build(
             let banner = banner.clone();
             let fallback = ssh_fallback.clone();
             let reconnecting = reconnecting.clone();
+            let child_pid = child_pid.clone();
             let working_dir = working_dir.clone();
             let session = session.clone();
             let attempts = Rc::new(Cell::new(0u32));
             let exits = Rc::new(Cell::new(0u64));
             terminal.connect_child_exited(move |terminal, status| {
                 exits.set(exits.get() + 1);
+                child_pid.set(None);
                 if ssh::remote_tmux_missing(status) && !fallback.get() {
                     fallback.set(true);
                     banner.set_title(NO_TMUX_BANNER);
@@ -136,6 +146,7 @@ pub fn build(
                         &working_dir,
                         &id,
                         &on_exited,
+                        &child_pid,
                     );
                 } else if ssh::connection_lost(status) || ssh::killed(status) {
                     // A dead transport or a killed child (logout,
@@ -157,6 +168,7 @@ pub fn build(
                     let banner = banner.downgrade();
                     let fallback = fallback.clone();
                     let reconnecting = reconnecting.clone();
+                    let child_pid = child_pid.clone();
                     let attempts = attempts.clone();
                     let exits = exits.clone();
                     let working_dir = working_dir.clone();
@@ -167,7 +179,14 @@ pub fn build(
                         let Some(terminal) = terminal.upgrade() else {
                             return;
                         };
-                        spawn(&terminal, proxy::wrap(argv), &working_dir, &id, &on_exited);
+                        spawn(
+                            &terminal,
+                            proxy::wrap(argv),
+                            &working_dir,
+                            &id,
+                            &on_exited,
+                            &child_pid,
+                        );
                         let seen = exits.get();
                         gtk::glib::timeout_add_local_once(RECONNECT_SETTLED, move || {
                             if exits.get() != seen {
@@ -190,7 +209,11 @@ pub fn build(
             });
         }
         PaneKind::Local => {
-            terminal.connect_child_exited(move |_, _| on_exited(&id));
+            let child_pid = child_pid.clone();
+            terminal.connect_child_exited(move |_, _| {
+                child_pid.set(None);
+                on_exited(&id);
+            });
             // tmux does not forward OSC 7, so this only ever fires for
             // plain-shell panes; stashed panes get their `last_dir`
             // from tmux at save time (window::capture_last_dirs).
@@ -221,6 +244,7 @@ pub fn build(
         &working_dir,
         &spec.id,
         &callbacks.on_exited,
+        &child_pid,
     );
 
     let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -235,6 +259,8 @@ pub fn build(
         stashed,
         ssh_fallback,
         reconnecting,
+        child_pid,
+        is_ssh: matches!(spec.kind, PaneKind::Ssh { .. }),
     }
 }
 
@@ -244,6 +270,7 @@ fn spawn(
     working_dir: &str,
     id: &str,
     on_exited: &Rc<dyn Fn(&str)>,
+    child_pid: &Rc<Cell<Option<gtk::glib::Pid>>>,
 ) {
     let argv: Vec<&str> = argv_owned.iter().map(String::as_str).collect();
 
@@ -256,6 +283,7 @@ fn spawn(
 
     let id = id.to_owned();
     let on_exited = on_exited.clone();
+    let child_pid = child_pid.clone();
     terminal.spawn_async(
         vte4::PtyFlags::DEFAULT,
         Some(working_dir),
@@ -265,8 +293,9 @@ fn spawn(
         || {},
         -1,
         gtk::gio::Cancellable::NONE,
-        move |result| {
-            if let Err(err) = result {
+        move |result| match result {
+            Ok(pid) => child_pid.set(Some(pid)),
+            Err(err) => {
                 // spawn never started, so child-exited will not fire
                 tracing::error!("pane spawn failed: {err}");
                 on_exited(&id);

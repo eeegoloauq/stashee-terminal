@@ -9,3 +9,6 @@
 /CLAUDE.md
 /docs/SPEC.md
 /docs/ARCHITECTURE.md
+
+# Playwright MCP session artifacts
+/.playwright-mcp/

@@ -2,6 +2,35 @@
 //! socket on purpose: the same session stays reachable from any other
 //! machine, not just from stashee.
 
+/// Transport keepalive for pane connections. Without it, an idle ssh
+/// on a half-open TCP link — the normal aftermath of suspend/resume —
+/// blocks in read forever: no exit status, no reconnect, a frozen
+/// pane. With it, ssh itself notices a dead transport within ~30 s
+/// and exits 255, which is exactly what [`connection_lost`] feeds on.
+/// `ConnectTimeout` bounds reconnect attempts made while the network
+/// is still coming back up. Command-line `-o` outranks `~/.ssh/config`
+/// deliberately: pane reconnection depends on these being in force.
+const PANE_OPTS: [&str; 6] = [
+    "-o",
+    "ServerAliveInterval=10",
+    "-o",
+    "ServerAliveCountMax=3",
+    "-o",
+    "ConnectTimeout=10",
+];
+
+/// One-shot commands (kill/rename) run headless — no tty to answer a
+/// prompt with — so fail fast instead of hanging on a dead network or
+/// an interactive auth request.
+const ONESHOT_OPTS: [&str; 4] = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=10"];
+
+fn with_opts(opts: &[&str], rest: &[&str]) -> Vec<String> {
+    let mut argv = vec!["ssh".to_owned()];
+    argv.extend(opts.iter().map(|&opt| opt.to_owned()));
+    argv.extend(rest.iter().map(|&arg| arg.to_owned()));
+    argv
+}
+
 /// argv to create-or-attach a stashed SSH pane.
 ///
 /// Besides attaching, the sequence turns `set-clipboard` on so that
@@ -13,31 +42,33 @@
 /// server, hence the explicit `start-server`.
 #[must_use]
 pub fn attach_remote_argv(host: &str, session: &str) -> Vec<String> {
-    vec![
-        "ssh".into(),
-        "-t".into(),
-        host.into(),
-        "--".into(),
-        "tmux".into(),
-        "start-server".into(),
-        "\\;".into(),
-        "set".into(),
-        "-s".into(),
-        "set-clipboard".into(),
-        "on".into(),
-        "\\;".into(),
-        "new-session".into(),
-        "-A".into(),
-        "-s".into(),
-        session.into(),
-    ]
+    with_opts(
+        &PANE_OPTS,
+        &[
+            "-t",
+            host,
+            "--",
+            "tmux",
+            "start-server",
+            "\\;",
+            "set",
+            "-s",
+            "set-clipboard",
+            "on",
+            "\\;",
+            "new-session",
+            "-A",
+            "-s",
+            session,
+        ],
+    )
 }
 
 /// Fallback when the remote has no tmux: a plain connection, with the
 /// pane showing a "Not stashed" banner (see SPEC.md "SSH panes").
 #[must_use]
 pub fn plain_argv(host: &str) -> Vec<String> {
-    vec!["ssh".into(), host.into()]
+    with_opts(&PANE_OPTS, &[host])
 }
 
 /// True when the ssh child's wait status means the remote command was
@@ -74,12 +105,7 @@ pub fn killed(wait_status: i32) -> bool {
 /// `ssh <host> -- tmux <args…>` — a one-shot remote tmux command (no
 /// tty, unlike the attach).
 fn remote_tmux_argv(host: &str, args: &[&str]) -> Vec<String> {
-    let mut argv = vec![
-        "ssh".to_owned(),
-        host.to_owned(),
-        "--".to_owned(),
-        "tmux".to_owned(),
-    ];
+    let mut argv = with_opts(&ONESHOT_OPTS, &[host, "--", "tmux"]);
     argv.extend(args.iter().map(|&arg| arg.to_owned()));
     argv
 }
@@ -110,6 +136,12 @@ mod tests {
             attach_remote_argv("e@server", "stashee-srv-abc123"),
             [
                 "ssh",
+                "-o",
+                "ServerAliveInterval=10",
+                "-o",
+                "ServerAliveCountMax=3",
+                "-o",
+                "ConnectTimeout=10",
                 "-t",
                 "e@server",
                 "--",
@@ -130,8 +162,20 @@ mod tests {
     }
 
     #[test]
-    fn plain_fallback_is_just_ssh() {
-        assert_eq!(plain_argv("e@server"), ["ssh", "e@server"]);
+    fn plain_fallback_keeps_the_keepalive() {
+        assert_eq!(
+            plain_argv("e@server"),
+            [
+                "ssh",
+                "-o",
+                "ServerAliveInterval=10",
+                "-o",
+                "ServerAliveCountMax=3",
+                "-o",
+                "ConnectTimeout=10",
+                "e@server",
+            ]
+        );
     }
 
     #[test]
@@ -168,6 +212,10 @@ mod tests {
             rename_remote_argv("e@server", "stashee-srv-abc123", "stashee-prod-abc123"),
             [
                 "ssh",
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "ConnectTimeout=10",
                 "e@server",
                 "--",
                 "tmux",
@@ -185,6 +233,10 @@ mod tests {
             kill_remote_argv("e@server", "stashee-srv-abc123"),
             [
                 "ssh",
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "ConnectTimeout=10",
                 "e@server",
                 "--",
                 "tmux",
