@@ -3,7 +3,14 @@
 # the COPR spec, the AUR PKGBUILD/.SRCINFO and the AppStream metainfo;
 # this script is the only thing that touches those copies.
 #
-#   scripts/release.sh <x.y.z>   bump everything, run the gate, commit, tag
+#   scripts/release.sh <x.y.z> [notes.md]
+#                                bump everything, run the gate, commit, tag.
+#                                The annotated tag's message is the release
+#                                notes: Forgejo shows it on the releases
+#                                page, the GitHub workflow copies it into
+#                                the release body. Without a notes file,
+#                                $EDITOR opens. One summary line, blank
+#                                line, then plain bullets.
 #   scripts/release.sh aur       after the tag is on GitHub: update the AUR
 #                                checksum + .SRCINFO and commit
 set -euo pipefail
@@ -23,7 +30,7 @@ current_version() {
 
 case "${1:-}" in
 "")
-  die "usage: scripts/release.sh <x.y.z> | aur"
+  die "usage: scripts/release.sh <x.y.z> [notes.md] | aur"
   ;;
 
 aur)
@@ -45,7 +52,9 @@ aur)
 
 *)
   ver=$1
+  notes=${2:-}
   [[ "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "not a version: $ver"
+  [ -z "$notes" ] || [ -s "$notes" ] || die "notes file missing or empty: $notes"
   [ -z "$(git status --porcelain)" ] || die "working tree not clean"
   git rev-parse -q --verify "refs/tags/v$ver" >/dev/null && die "tag v$ver already exists"
 
@@ -63,7 +72,11 @@ aur)
 
   git add Cargo.toml Cargo.lock "$copr_spec" "$metainfo"
   git commit -m "stashee v$ver"
-  git tag "v$ver"
+  if [ -n "$notes" ]; then
+    git tag -a "v$ver" -F "$notes"
+  else
+    git tag -a "v$ver"
+  fi
   echo "done — next: git push origin main v$ver, then scripts/release.sh aur"
   ;;
 esac

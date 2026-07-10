@@ -36,9 +36,17 @@ jobs:
             --define "version $version" \
             --define "srcroot $PWD" \
             --define "_rpmdir $PWD/dist"
+      # actions/checkout leaves the tag peeled (checkout#290), so
+      # re-fetch the annotated object to read the release notes off it.
+      - name: Release notes from the tag message
+        run: |
+          git config --global --add safe.directory "$PWD"
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > "$RUNNER_TEMP/notes.md"
       - name: Attach RPM to the GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: ${{ runner.temp }}/notes.md
           files: dist/x86_64/stashee-*.rpm
 
   build-arch:
@@ -71,7 +79,15 @@ jobs:
           su builder -c "cd '$PWD/packaging' && \
             STASHEE_SRC='$PWD' STASHEE_VERSION='$version' PKGDEST='$PWD/dist' \
             makepkg -f --nodeps"
+      # Same notes as build-fedora: whichever job creates the release
+      # first sets the body, the other writes the identical text.
+      - name: Release notes from the tag message
+        run: |
+          git config --global --add safe.directory "$PWD"
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > "$RUNNER_TEMP/notes.md"
       - name: Attach package to the GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: ${{ runner.temp }}/notes.md
           files: dist/stashee-*.pkg.tar.zst
