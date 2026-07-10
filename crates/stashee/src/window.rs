@@ -27,7 +27,7 @@ use crate::pane::{self, Pane};
 use crate::paths;
 use crate::settings::Backdrop;
 use crate::sidebar::Sidebar;
-use crate::{keys, settings};
+use crate::{keys, settings, shortcuts};
 
 thread_local! {
     /// The one live window's context, for `stashee <name>` arriving
@@ -48,9 +48,9 @@ pub(crate) struct View {
     focused: Option<String>,
 }
 
-/// Shared by window.rs and its satellites keys.rs (shortcut assembly)
-/// and settings.rs (backdrop, config watch); fields those two need are
-/// `pub(crate)`.
+/// Shared by window.rs and its satellites keys.rs (shortcut assembly),
+/// settings.rs (backdrop, config watch), and shortcuts.rs (the
+/// shortcuts dialog); fields those need are `pub(crate)`.
 pub(crate) struct Ctx {
     /// Replaced wholesale on live config reload (settings.rs).
     pub(crate) config: RefCell<Config>,
@@ -62,7 +62,7 @@ pub(crate) struct Ctx {
     content: gtk::Stack,
     title: adw::WindowTitle,
     sidebar: Sidebar,
-    toasts: adw::ToastOverlay,
+    pub(crate) toasts: adw::ToastOverlay,
     tmux_conf: PathBuf,
     pub(crate) backdrop: Rc<Backdrop>,
     /// For swapping the shortcut controller on config reload.
@@ -400,7 +400,7 @@ fn install_actions(ctx: &Rc<Ctx>, window: &adw::ApplicationWindow) {
     let action = gio::SimpleAction::new("shortcuts", None);
     {
         let ctx = ctx.clone();
-        action.connect_activate(move |_, _| show_shortcuts(&ctx));
+        action.connect_activate(move |_, _| shortcuts::show(&ctx));
     }
     window.add_action(&action);
 
@@ -727,66 +727,6 @@ fn add_pane(ctx: &Rc<Ctx>, spec: PaneSpec) {
     refresh_view(ctx, index);
     save(ctx);
     terminal.grab_focus();
-}
-
-/// "Keyboard Shortcuts" from the primary menu. GtkShortcutsWindow is
-/// builder-XML-only, so the XML is assembled from the live config —
-/// rebound keys show as bound, disabled (empty) ones drop their row.
-fn show_shortcuts(ctx: &Rc<Ctx>) {
-    let keys = ctx.config.borrow().keys.clone();
-    let shortcut = |title: &str, accelerator: &str| {
-        if accelerator.trim().is_empty() {
-            return String::new();
-        }
-        format!(
-            "<child><object class=\"GtkShortcutsShortcut\">\
-             <property name=\"title\">{}</property>\
-             <property name=\"accelerator\">{}</property>\
-             </object></child>",
-            glib::markup_escape_text(title),
-            glib::markup_escape_text(accelerator),
-        )
-    };
-    let group = |title: &str, body: &str| {
-        format!(
-            "<child><object class=\"GtkShortcutsGroup\">\
-             <property name=\"title\">{title}</property>{body}</object></child>"
-        )
-    };
-    // a GtkShortcutsShortcut accelerator is a space-separated list
-    let focus = [
-        &keys.focus_left,
-        &keys.focus_right,
-        &keys.focus_up,
-        &keys.focus_down,
-    ]
-    .iter()
-    .map(|accel| accel.trim())
-    .filter(|accel| !accel.is_empty())
-    .collect::<Vec<_>>()
-    .join(" ");
-    let panes = shortcut("New pane", &keys.new_pane)
-        + &shortcut("New SSH pane", &keys.new_ssh_pane)
-        + &shortcut("Close pane", &keys.close_pane)
-        + &shortcut("Move focus", &focus);
-    let workflows = shortcut("Switch workflow", "<Alt>1...<Alt>9");
-    let clipboard = shortcut("Copy", &keys.copy) + &shortcut("Paste", &keys.paste);
-    let ui = format!(
-        "<interface><object class=\"GtkShortcutsWindow\" id=\"shortcuts\">\
-         <property name=\"modal\">true</property>\
-         <child><object class=\"GtkShortcutsSection\">{}{}{}</object></child>\
-         </object></interface>",
-        group("Panes", &panes),
-        group("Workflows", &workflows),
-        group("Clipboard", &clipboard),
-    );
-    let builder = gtk::Builder::from_string(&ui);
-    let Some(dialog) = builder.object::<gtk::ShortcutsWindow>("shortcuts") else {
-        tracing::error!("shortcuts window failed to build");
-        return;
-    };
-    dialog.set_transient_for(ctx.window.upgrade().as_ref());
-    dialog.present();
 }
 
 /// "About Stashee" from the primary menu.
