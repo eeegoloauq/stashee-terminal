@@ -8,6 +8,7 @@ mod pane;
 mod paths;
 mod proxy;
 mod settings;
+mod shortcuts;
 mod sidebar;
 mod window;
 
