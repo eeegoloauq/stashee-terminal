@@ -11,6 +11,7 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::os::unix::net::UnixStream;
 use std::process::ExitStatus;
+use std::sync::mpsc;
 use std::time::Duration;
 
 use stashee_core::osc52;
@@ -96,6 +97,25 @@ pub fn run(cmd: &[OsString]) -> i32 {
         }
     });
 
+    // The child's exit, not pty EOF, decides when the proxy is done.
+    // EOF alone can never come: a tmux client that had to fork the
+    // server leaves it holding a copy of our pty slave for the
+    // server's whole lifetime, so after that client exits the read
+    // loop below would block until the *server* died — the pane that
+    // started the server could not close until the last other session
+    // ended. The grace sleep lets the loop drain what the dead child
+    // left in the pty buffer before the process leaves.
+    let (send_status, recv_status) = mpsc::channel();
+    std::thread::spawn(move || {
+        let code = match child.wait() {
+            Ok(status) => exit_code(status),
+            Err(_) => 1,
+        };
+        let _ = send_status.send(code);
+        std::thread::sleep(Duration::from_millis(200));
+        std::process::exit(code);
+    });
+
     // Output: child → pane, watched for OSC 52 copies.
     let mut output = File::from(master);
     let mut stdout = io::stdout().lock();
@@ -122,10 +142,7 @@ pub fn run(cmd: &[OsString]) -> i32 {
         }
     }
     drop(raw_mode);
-    match child.wait() {
-        Ok(status) => exit_code(status),
-        Err(_) => 1,
-    }
+    recv_status.recv().unwrap_or(1)
 }
 
 /// Hand the copy to the app over its clipboard socket; the app sets
