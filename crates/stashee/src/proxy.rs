@@ -84,10 +84,15 @@ pub fn run(cmd: &[OsString]) -> i32 {
     });
 
     // Resizes: VTE resizes our pty, the kernel sends SIGWINCH, we
-    // mirror the new size onto the child's pty.
+    // mirror the new size onto the child's pty. Forward the signal
+    // explicitly too: TIOCSWINSZ only signals the child when the size
+    // actually changed, and the app's post-resume transport probe
+    // (window.rs) is a SIGWINCH with an *unchanged* size.
+    let child_pid = child.id();
     std::thread::spawn(move || {
         while stashee_pty::wait_sigwinch() {
             stashee_pty::resize_to_stdin(&resize_fd);
+            stashee_pty::send_sigwinch(child_pid.cast_signed());
         }
     });
 

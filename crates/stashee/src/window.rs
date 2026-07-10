@@ -70,6 +70,9 @@ pub(crate) struct Ctx {
     pub(crate) shortcuts: RefCell<Option<gtk::EventControllerKey>>,
     /// Held so the config.toml watch keeps firing (settings.rs).
     pub(crate) config_monitor: RefCell<Option<gio::FileMonitor>>,
+    /// Held so the logind resume watch keeps firing (`watch_resume`);
+    /// dropping the subscription unsubscribes.
+    resume_watch: RefCell<Option<gio::SignalSubscription>>,
 }
 
 pub fn present(app: &adw::Application) {
@@ -259,6 +262,7 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
         window: window.downgrade(),
         shortcuts: RefCell::new(None),
         config_monitor: RefCell::new(None),
+        resume_watch: RefCell::new(None),
     });
 
     let workflows = ctx.state.borrow().workflows.clone();
@@ -270,6 +274,7 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
     install_actions(&ctx, &window);
     warnings.extend(keys::install_shortcuts(&ctx, &window));
     settings::watch_config(&ctx);
+    watch_resume(&ctx);
 
     {
         let for_select = ctx.clone();
@@ -304,6 +309,62 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
     }
     CTX.with(|slot| *slot.borrow_mut() = Some(ctx.clone()));
     Ok(window)
+}
+
+/// The reconnect logic (pane.rs) only ever *reacts* to the ssh client
+/// exiting, and after suspend/resume an idle ssh on a half-open TCP
+/// link exits only when its keepalive timer notices (~30 s, see
+/// ssh::PANE_OPTS). logind broadcasts `PrepareForSleep(false)` on
+/// resume: probe every SSH pane's transport right then, so dead links
+/// fail immediately instead. The probe is a SIGWINCH — ssh answers it
+/// with a window-change packet, which a live connection ignores
+/// entirely and a dead one trips over (exit 255 → reconnect). Without
+/// a system bus (containers, non-systemd) keepalive stays the only
+/// detector.
+fn watch_resume(ctx: &Rc<Ctx>) {
+    let ctx = ctx.clone();
+    gio::bus_get(gio::BusType::System, gio::Cancellable::NONE, move |bus| {
+        let connection = match bus {
+            Ok(connection) => connection,
+            Err(err) => {
+                tracing::debug!("no system bus; resume probe disabled: {err}");
+                return;
+            }
+        };
+        // Weak: the subscription lives in ctx — a strong ctx here
+        // would be a cycle.
+        let weak = Rc::downgrade(&ctx);
+        let subscription = connection.subscribe_to_signal(
+            Some("org.freedesktop.login1"),
+            Some("org.freedesktop.login1.Manager"),
+            Some("PrepareForSleep"),
+            Some("/org/freedesktop/login1"),
+            None,
+            gio::DBusSignalFlags::NONE,
+            move |signal| {
+                let Some(ctx) = weak.upgrade() else { return };
+                // true = going down, false = back up
+                if signal.parameters.get::<(bool,)>() == Some((false,)) {
+                    probe_ssh_transports(&ctx);
+                }
+            },
+        );
+        *ctx.resume_watch.borrow_mut() = Some(subscription);
+    });
+}
+
+/// One SIGWINCH per SSH pane, visible workflows or not — hidden panes
+/// are exactly the ones nothing else would ever poke.
+fn probe_ssh_transports(ctx: &Rc<Ctx>) {
+    for view in ctx.views.borrow().iter() {
+        for pane in &view.panes {
+            if pane.is_ssh
+                && let Some(pid) = pane.child_pid.get()
+            {
+                stashee_pty::send_sigwinch(pid.0);
+            }
+        }
+    }
 }
 
 fn fallback(app: &adw::Application, message: &str) -> adw::ApplicationWindow {

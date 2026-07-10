@@ -142,6 +142,18 @@ impl Drop for RawModeGuard {
     }
 }
 
+/// Send `SIGWINCH` to `pid`. ssh answers one by writing a
+/// window-change packet to the server, which is the cheapest way to
+/// make a half-open TCP connection (post suspend/resume) fail *now*
+/// instead of when the keepalive timer gets around to it. The proxy
+/// forwards it to its child; the frontend fires it at every SSH
+/// pane's child on resume. Failure (the child already exited) only
+/// delays detection until keepalive, so it is deliberately unchecked.
+pub fn send_sigwinch(pid: i32) {
+    // SAFETY: kill(2) with a valid signal; no memory is involved.
+    unsafe { libc::kill(pid, libc::SIGWINCH) };
+}
+
 /// Block `SIGWINCH` for the whole process. Call before spawning
 /// threads (they inherit the mask), then have one thread consume the
 /// signal via [`wait_sigwinch`].
