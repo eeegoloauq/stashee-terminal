@@ -31,6 +31,10 @@ jobs:
           git remote add github "$GH_REMOTE"
           case "$GITHUB_REF" in
             refs/heads/main) git push -qf github "HEAD:refs/heads/main" ;;
-            refs/tags/*)     git push -qf github "refs/tags/${GITHUB_REF_NAME}" ;;
+            # re-fetch first: checkout leaves annotated tags peeled
+            # (checkout#290) and a peeled push would drop the release
+            # notes living in the tag message
+            refs/tags/*)     git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+                             git push -qf github "refs/tags/${GITHUB_REF_NAME}" ;;
           esac
           echo "synced $GITHUB_REF"

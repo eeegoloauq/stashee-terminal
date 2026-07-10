@@ -32,9 +32,10 @@ install:
     install -Dm644 crates/stashee/data/dev.stashee.Terminal.metainfo.xml ~/.local/share/metainfo/dev.stashee.Terminal.metainfo.xml
     -update-desktop-database ~/.local/share/applications
 
-# bump the version everywhere it is duplicated, run the gate, commit, tag
-release version:
-    scripts/release.sh {{version}}
+# bump the version everywhere it is duplicated, run the gate, commit,
+# tag — the tag message (from notes.md, or $EDITOR) is the release notes
+release version notes="":
+    scripts/release.sh {{version}} {{notes}}
 
 # after main + tag are on GitHub: update the AUR checksum and commit
 release-aur:
