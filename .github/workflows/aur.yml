@@ -1,0 +1,32 @@
+name: AUR
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The tracked PKGBUILD is a reference copy; pkgver/sha256sums are
+      # stamped here so a release never depends on a manual bump commit.
+      - name: Stamp PKGBUILD with the released version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          sha=$(curl -sfL "https://github.com/${GITHUB_REPOSITORY}/archive/v${version}.tar.gz" | sha256sum | cut -d' ' -f1)
+          sed -i \
+            -e "s/^pkgver=.*/pkgver=${version}/" \
+            -e "s/^pkgrel=.*/pkgrel=1/" \
+            -e "s/^sha256sums=.*/sha256sums=('${sha}')/" \
+            packaging/aur/PKGBUILD
+      - name: Push to AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
+        with:
+          pkgname: stashee
+          pkgbuild: ./packaging/aur/PKGBUILD
+          commit_username: eeegoloauq
+          commit_email: eeegoloauq@users.noreply.github.com
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update to ${{ github.ref_name }}

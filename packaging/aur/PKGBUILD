@@ -1,7 +1,9 @@
 # Maintainer: eeegoloauq <eeegoloauq@users.noreply.github.com>
-# Source PKGBUILD published to the AUR. CI uses packaging/PKGBUILD
-# instead (binary-only). Bump pkgver together with the workspace
-# Cargo.toml, update sha256sums, regenerate .SRCINFO.
+# Source PKGBUILD published to the AUR. The release workflow
+# (.github/workflows/aur.yml) stamps pkgver/sha256sums, regenerates
+# .SRCINFO and pushes on every v* tag — no manual bump needed.
+# packaging/PKGBUILD is a separate binary-only variant used by CI
+# to build the release .pkg.tar.zst.
 pkgname=stashee
 pkgver=0.1.13
 pkgrel=1
