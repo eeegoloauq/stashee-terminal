@@ -14,6 +14,13 @@ jobs:
       # stamped here so a release never depends on a manual bump commit.
       - name: Stamp PKGBUILD with the released version
         run: |
+          set -o pipefail
+          # workflow_dispatch lets you pick any ref; only v* tags name a
+          # release tarball, so refuse everything else.
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then
+            echo "::error::run this workflow from a v* tag, not '$GITHUB_REF_NAME'"
+            exit 1
+          fi
           version="${GITHUB_REF_NAME#v}"
           sha=$(curl -sfL "https://github.com/${GITHUB_REPOSITORY}/archive/v${version}.tar.gz" | sha256sum | cut -d' ' -f1)
           sed -i \

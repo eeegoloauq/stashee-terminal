@@ -54,6 +54,12 @@ sudo dnf copr enable eeegoloauq/stashee
 sudo dnf install stashee
 ```
 
+Arch, via the [AUR](https://aur.archlinux.org/packages/stashee):
+
+```sh
+yay -S stashee   # or: paru -S stashee
+```
+
 Each release on the
 [releases page](https://github.com/eeegoloauq/stashee-terminal/releases)
 also ships an `.rpm` for Fedora and a `.pkg.tar.zst` for Arch:
