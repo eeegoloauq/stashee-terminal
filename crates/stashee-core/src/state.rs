@@ -137,6 +137,7 @@ impl State {
                 id: id.to_owned(),
                 kind: PaneKind::Local,
                 last_dir: None,
+                run: None,
             };
             match self
                 .workflows
@@ -174,6 +175,7 @@ mod tests {
             id: id.into(),
             kind,
             last_dir: None,
+            run: None,
         }
     }
 
@@ -224,6 +226,7 @@ mod tests {
                     "cccccc",
                     PaneKind::Ssh {
                         host: "e@server".into(),
+                        cwd: None,
                     },
                 )],
             )],
@@ -397,6 +400,7 @@ mod tests {
                         "cccccc",
                         PaneKind::Ssh {
                             host: "e@server".into(),
+                            cwd: Some("/opt/app".into()),
                         },
                     ),
                 ],

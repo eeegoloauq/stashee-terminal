@@ -123,8 +123,10 @@ pub fn build(
         // A host without tmux makes the wrapper exit 127; the pane
         // falls back to a plain connection instead of disappearing
         // (SPEC.md "SSH panes").
-        PaneKind::Ssh { host } => {
+        PaneKind::Ssh { host, cwd } => {
             let host = host.clone();
+            let cwd = cwd.clone();
+            let run = spec.run.clone();
             let banner = banner.clone();
             let fallback = ssh_fallback.clone();
             let reconnecting = reconnecting.clone();
@@ -161,7 +163,10 @@ pub fn build(
                     let argv = if fallback.get() {
                         ssh::plain_argv(&host)
                     } else {
-                        ssh::attach_remote_argv(&host, &session)
+                        // cwd/run ride along: they only apply if the
+                        // remote session has to be recreated (remote
+                        // reboot) — a plain reattach ignores them.
+                        ssh::attach_remote_argv(&host, &session, cwd.as_deref(), run.as_deref())
                     };
                     let delay = Duration::from_secs(1 << attempt.min(4));
                     let terminal = terminal.downgrade();
@@ -234,9 +239,29 @@ pub fn build(
     // tmux, the local tmux, a TUI selecting text itself — only reach
     // the system clipboard through it (SPEC.md "Selection & clipboard").
     let argv = match (&spec.kind, stashed) {
-        (PaneKind::Ssh { host }, _) => proxy::wrap(ssh::attach_remote_argv(host, &session)),
-        (PaneKind::Local, true) => proxy::wrap(tmux::attach_local_argv(tmux_conf, &session, &dir)),
-        (PaneKind::Local, false) => proxy::wrap(vec![default_shell()]),
+        (PaneKind::Ssh { host, cwd }, _) => proxy::wrap(ssh::attach_remote_argv(
+            host,
+            &session,
+            cwd.as_deref(),
+            spec.run.as_deref(),
+        )),
+        (PaneKind::Local, true) => proxy::wrap(tmux::attach_local_argv(
+            tmux_conf,
+            &session,
+            &dir,
+            spec.run.as_deref(),
+        )),
+        // A plain shell has no session to hang create-time semantics
+        // on, so a template `run` fires on every spawn — that *is*
+        // creation for a shell that dies with the app.
+        (PaneKind::Local, false) => match spec.run.as_deref() {
+            Some(run) => proxy::wrap(vec![
+                "/bin/sh".to_owned(),
+                "-c".to_owned(),
+                tmux::run_then_shell(run),
+            ]),
+            None => proxy::wrap(vec![default_shell()]),
+        },
     };
     spawn(
         &terminal,

@@ -40,9 +40,21 @@ fn with_opts(opts: &[&str], rest: &[&str]) -> Vec<String> {
 /// a failed command aborts the whole sequence, so only options every
 /// tmux version knows may appear; and `set` alone cannot start a
 /// server, hence the explicit `start-server`.
+///
+/// `cwd` and `run` come from workflow templates and ride on
+/// `new-session`, which applies them only when the call creates the
+/// session — a reattach ignores both, so `run` can never fire twice.
+/// Both are quoted to survive the remote shell as single words; `cwd`
+/// is the one option here younger than the rest (`new-session -c`,
+/// tmux 1.9, 2013) and is only emitted when a template asks for it.
 #[must_use]
-pub fn attach_remote_argv(host: &str, session: &str) -> Vec<String> {
-    with_opts(
+pub fn attach_remote_argv(
+    host: &str,
+    session: &str,
+    cwd: Option<&str>,
+    run: Option<&str>,
+) -> Vec<String> {
+    let mut argv = with_opts(
         &PANE_OPTS,
         &[
             "-t",
@@ -61,7 +73,29 @@ pub fn attach_remote_argv(host: &str, session: &str) -> Vec<String> {
             "-s",
             session,
         ],
-    )
+    );
+    if let Some(cwd) = cwd {
+        argv.push("-c".to_owned());
+        argv.push(remote_path(cwd));
+    }
+    if let Some(run) = run {
+        argv.push(crate::tmux::shell_quote(&crate::tmux::run_then_shell(run)));
+    }
+    argv
+}
+
+/// Quote a template path for the remote shell. A leading `~` becomes
+/// `$HOME` *outside* the quotes — the remote home is unknowable here,
+/// and quoting would keep tilde literal; everything else is
+/// single-quoted so spaces survive the ssh join.
+fn remote_path(path: &str) -> String {
+    if path == "~" {
+        return "\"$HOME\"".to_owned();
+    }
+    match path.strip_prefix("~/") {
+        Some(rest) => format!("\"$HOME\"{}", crate::tmux::shell_quote(&format!("/{rest}"))),
+        None => crate::tmux::shell_quote(path),
+    }
 }
 
 /// Fallback when the remote has no tmux: a plain connection, with the
@@ -133,7 +167,7 @@ mod tests {
     #[test]
     fn remote_attach_argv_matches_spec() {
         assert_eq!(
-            attach_remote_argv("e@server", "stashee-srv-abc123"),
+            attach_remote_argv("e@server", "stashee-srv-abc123", None, None),
             [
                 "ssh",
                 "-o",
@@ -159,6 +193,39 @@ mod tests {
                 "stashee-srv-abc123",
             ]
         );
+    }
+
+    #[test]
+    fn template_cwd_and_run_ride_on_new_session_quoted() {
+        let argv = attach_remote_argv(
+            "dev",
+            "stashee-myproj-abc123",
+            Some("/opt/my proj"),
+            Some("claude"),
+        );
+        let tail: Vec<&str> = argv
+            .iter()
+            .rev()
+            .take(4)
+            .rev()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(
+            tail,
+            [
+                "stashee-myproj-abc123",
+                "-c",
+                "'/opt/my proj'",
+                "'claude; exec \"${SHELL:-/bin/sh}\"'",
+            ]
+        );
+    }
+
+    #[test]
+    fn remote_tilde_paths_lean_on_the_remote_home() {
+        assert_eq!(remote_path("~"), "\"$HOME\"");
+        assert_eq!(remote_path("~/proj"), "\"$HOME\"'/proj'");
+        assert_eq!(remote_path("/opt/x"), "'/opt/x'");
     }
 
     #[test]
