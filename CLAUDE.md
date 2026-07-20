@@ -47,5 +47,5 @@ libadwaita-1-dev libvte-2.91-gtk4-dev` (end users need nothing — GTK/VTE ship 
 
 ## Not in v1
 
-Tabs inside panes · plugins · settings GUI · theme gallery · pane drag-reordering ·
+Tabs inside panes · plugins · settings GUI · theme gallery ·
 non-Linux · own scrollback (tmux's is fine; control-mode scrollback is v1.x — roadmap in docs/SPEC.md).

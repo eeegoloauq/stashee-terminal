@@ -110,6 +110,12 @@ pub(crate) fn show(ctx: &Rc<Ctx>) {
         }
     }
 
+    // Alt+drag is a pointer gesture, not a rebindable accelerator.
+    panes.push(shortcut_row(
+        "Move pane (swap, or drop on a workflow)",
+        &["Alt", "Drag"].map(str::to_owned),
+    ));
+
     // Alt+N is fixed (keys.rs), so the range is spelled directly.
     let workflows = vec![shortcut_row(
         "Switch workflow",

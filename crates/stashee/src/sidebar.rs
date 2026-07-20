@@ -3,7 +3,9 @@
 //! context menu dispatches window actions (`win.rename-workflow` etc.)
 //! carrying the workflow name.
 
+use std::cell::RefCell;
 use std::path::Path;
+use std::rc::Rc;
 
 use gtk4 as gtk;
 use gtk4::gio;
@@ -13,10 +15,17 @@ use libadwaita as adw;
 
 use stashee_core::model::Workflow;
 
+use crate::pane::PaneDrag;
+
+type PaneDropHandler = Rc<RefCell<Option<Box<dyn Fn(&str, &str)>>>>;
+
 pub struct Sidebar {
     root: gtk::Box,
     list: gtk::ListBox,
     add: gtk::Button,
+    /// `(pane_id, workflow_name)` when a pane is Alt+dragged onto a
+    /// row. Held in a slot because rows are rebuilt on every refresh.
+    pane_drop: PaneDropHandler,
 }
 
 impl Sidebar {
@@ -58,7 +67,12 @@ impl Sidebar {
         root.append(&scroll);
         root.append(&add);
 
-        Self { root, list, add }
+        Self {
+            root,
+            list,
+            add,
+            pane_drop: Rc::new(RefCell::new(None)),
+        }
     }
 
     pub fn widget(&self) -> &gtk::Box {
@@ -79,6 +93,11 @@ impl Sidebar {
         self.add.connect_clicked(move |_| f());
     }
 
+    /// `f(pane_id, workflow_name)` when a pane is dropped on a row.
+    pub fn connect_pane_drop(&self, f: impl Fn(&str, &str) + 'static) {
+        *self.pane_drop.borrow_mut() = Some(Box::new(f));
+    }
+
     /// Rebuild the list to mirror `workflows`; `active` drives the
     /// selected row.
     pub fn refresh(&self, workflows: &[Workflow], active: &str) {
@@ -93,12 +112,32 @@ impl Sidebar {
             // through the context menu's folder picker
             row.set_tooltip_text(Some(&display_dir(&workflow.default_dir)));
             attach_menu(&row, &workflow.name, workflow.stash);
+            attach_pane_drop(&row, &workflow.name, &self.pane_drop);
             self.list.append(&row);
             if workflow.name.eq_ignore_ascii_case(active) {
                 self.list.select_row(Some(&row));
             }
         }
     }
+}
+
+/// A row accepts a pane dropped from the grid (Alt+drag): the move-to-
+/// workflow gesture. The custom boxed payload means nothing else can
+/// land here by accident.
+fn attach_pane_drop(row: &gtk::ListBoxRow, name: &str, handler: &PaneDropHandler) {
+    let target = gtk::DropTarget::new(PaneDrag::static_type(), gtk::gdk::DragAction::MOVE);
+    let name = name.to_owned();
+    let handler = handler.clone();
+    target.connect_drop(move |_, value, _, _| match value.get::<PaneDrag>() {
+        Ok(dragged) => {
+            if let Some(f) = handler.borrow().as_ref() {
+                f(&dragged.0, &name);
+            }
+            true
+        }
+        Err(_) => false,
+    });
+    row.add_controller(target);
 }
 
 /// Right-click menu on a workflow row. Entries dispatch window actions
