@@ -73,8 +73,8 @@ pub(crate) struct Ctx {
     /// Held so the logind resume watch keeps firing (`watch_resume`);
     /// dropping the subscription unsubscribes.
     resume_watch: RefCell<Option<gio::SignalSubscription>>,
-    /// The running voice recording, if any (voice.rs).
-    pub(crate) voice: RefCell<Option<crate::voice::Session>>,
+    /// Voice input state: session, transcriber, model download (voice.rs).
+    pub(crate) voice: RefCell<crate::voice::VoiceCtl>,
 }
 
 pub fn present(app: &adw::Application) {
@@ -269,7 +269,7 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
         shortcuts: RefCell::new(None),
         config_monitor: RefCell::new(None),
         resume_watch: RefCell::new(None),
-        voice: RefCell::new(None),
+        voice: RefCell::new(crate::voice::VoiceCtl::default()),
     });
 
     let workflows = ctx.state.borrow().workflows.clone();
@@ -824,10 +824,10 @@ pub(crate) fn focused_terminal(ctx: &Rc<Ctx>) -> Option<vte4::Terminal> {
         })
 }
 
-/// The focused pane's root (every pane is a `gtk::Overlay`, see
-/// pane.rs), for OSD chips like the voice pill. Same
-/// focused-or-first rule as [`focused_terminal`].
-pub(crate) fn focused_pane_overlay(ctx: &Rc<Ctx>) -> Option<gtk::Overlay> {
+/// The focused pane's root overlay (every pane is a `gtk::Overlay`,
+/// see pane.rs) and its terminal — for the voice pill and for feeding
+/// the transcript. Same focused-or-first rule as [`focused_terminal`].
+pub(crate) fn focused_pane(ctx: &Rc<Ctx>) -> Option<(gtk::Overlay, vte4::Terminal)> {
     let views = ctx.views.borrow();
     let active = ctx.active.borrow();
     views
@@ -839,7 +839,10 @@ pub(crate) fn focused_pane_overlay(ctx: &Rc<Ctx>) -> Option<gtk::Overlay> {
                 .and_then(|id| view.panes.iter().find(|pane| &pane.id == id))
                 .or_else(|| view.panes.first())
         })
-        .and_then(|pane| pane.root.clone().downcast::<gtk::Overlay>().ok())
+        .and_then(|pane| {
+            let overlay = pane.root.clone().downcast::<gtk::Overlay>().ok()?;
+            Some((overlay, pane.terminal.clone()))
+        })
 }
 
 fn focus_active_pane(ctx: &Rc<Ctx>) {
