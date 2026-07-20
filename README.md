@@ -4,6 +4,10 @@
 
 **A tiling terminal workspace for Linux.**
 
+[![Release](https://img.shields.io/github/v/release/eeegoloauq/stashee-terminal?label=release)](https://github.com/eeegoloauq/stashee-terminal/releases/latest)
+[![Copr build status](https://copr.fedorainfracloud.org/coprs/eeegoloauq/stashee/package/stashee/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/eeegoloauq/stashee/package/stashee/)
+[![AUR version](https://img.shields.io/aur/version/stashee?label=AUR)](https://aur.archlinux.org/packages/stashee)
+
 Terminals are grouped into named **workflows** and tile automatically.
 Every pane runs inside a tmux session, so closing the app **stashes** a
 workflow instead of killing it. Reopen, and every shell is back exactly
