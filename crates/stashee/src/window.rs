@@ -147,6 +147,11 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
     if let Err(err) = Config::ensure(&paths::config_file()) {
         tracing::warn!("cannot write the config template: {err:#}");
     }
+    // Every run: refresh the reference copy so options added by this
+    // version are discoverable without touching the user's file.
+    if let Err(err) = Config::ensure_reference(&paths::config_reference()) {
+        tracing::warn!("cannot refresh config.toml.default: {err:#}");
+    }
     let config = Config::load(&paths::config_file()).unwrap_or_else(|err| {
         tracing::warn!("config unreadable, using defaults: {err:#}");
         warnings.push("config.toml is unreadable — using defaults".to_owned());

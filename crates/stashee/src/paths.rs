@@ -11,6 +11,14 @@ pub fn config_file() -> PathBuf {
     glib::user_config_dir().join("stashee").join("config.toml")
 }
 
+/// The regenerated full-template reference next to the real config
+/// (`Config::ensure_reference`).
+pub fn config_reference() -> PathBuf {
+    glib::user_config_dir()
+        .join("stashee")
+        .join("config.toml.default")
+}
+
 pub fn state_file() -> PathBuf {
     glib::user_data_dir().join("stashee").join("state.toml")
 }
