@@ -295,33 +295,62 @@ pub fn build(
         &child_pid,
     );
 
-    let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
-    root.add_css_class("pane");
-    root.append(&banner);
-    root.append(&terminal);
+    let inner = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    inner.add_css_class("pane");
+    inner.append(&banner);
+    inner.append(&terminal);
 
-    // Alt+drag moves the pane — onto another pane to swap places, onto
-    // a sidebar workflow to transfer. Capture phase with a modifier
-    // gate: a plain drag must stay VTE's text selection, so without
-    // Alt `prepare` declines and the terminal sees the events.
-    let drag = gtk::DragSource::new();
-    drag.set_actions(gtk::gdk::DragAction::MOVE);
-    drag.set_propagation_phase(gtk::PropagationPhase::Capture);
+    // The drag handle: an OSD chip in the top-right corner, revealed
+    // on hover (CSS `.pane-hover .drag-handle`). Dragging the pane's
+    // body can't be the gesture — that is VTE text selection — so the
+    // handle is the visible, modifier-free way to move a pane.
+    let handle = gtk::Image::from_icon_name("list-drag-handle-symbolic");
+    handle.add_css_class("drag-handle");
+    handle.set_halign(gtk::Align::End);
+    handle.set_valign(gtk::Align::Start);
+    handle.set_margin_top(10);
+    handle.set_margin_end(10);
+    handle.set_tooltip_text(Some(
+        "Move pane: drop on a pane to swap, on a workflow to transfer",
+    ));
+    handle.set_cursor_from_name(Some("grab"));
+
+    let root = gtk::Overlay::new();
+    root.set_child(Some(&inner));
+    root.add_overlay(&handle);
+
+    let motion = gtk::EventControllerMotion::new();
     {
-        let id = spec.id.clone();
-        drag.connect_prepare(move |source, _, _| {
-            source
-                .current_event_state()
-                .contains(gtk::gdk::ModifierType::ALT_MASK)
-                .then(|| gtk::gdk::ContentProvider::for_value(&PaneDrag(id.clone()).to_value()))
+        let root = root.downgrade();
+        motion.connect_enter(move |_, _, _| {
+            if let Some(root) = root.upgrade() {
+                root.add_css_class("pane-hover");
+            }
         });
     }
-    drag.connect_drag_begin(|source, _| {
-        if let Some(widget) = source.widget() {
-            source.set_icon(Some(&gtk::WidgetPaintable::new(Some(&widget))), 0, 0);
-        }
-    });
-    root.add_controller(drag);
+    {
+        let root = root.downgrade();
+        motion.connect_leave(move |_| {
+            if let Some(root) = root.upgrade() {
+                root.remove_css_class("pane-hover");
+            }
+        });
+    }
+    root.add_controller(motion);
+
+    handle.add_controller(pane_drag_source(
+        &spec.id,
+        &root,
+        gtk::PropagationPhase::Bubble,
+    ));
+    // Alt+drag from anywhere in the pane still works (capture phase
+    // with a modifier gate — without Alt, `prepare` declines and the
+    // terminal keeps its text selection).
+    root.add_controller(pane_drag_source(
+        &spec.id,
+        &root,
+        gtk::PropagationPhase::Capture,
+    ));
 
     let drop = gtk::DropTarget::new(PaneDrag::static_type(), gtk::gdk::DragAction::MOVE);
     {
@@ -348,6 +377,36 @@ pub fn build(
         child_pid,
         is_ssh: matches!(spec.kind, PaneKind::Ssh { .. }),
     }
+}
+
+/// A drag source carrying the pane id. Capture phase means the pane
+/// body: there it is Alt-gated so a plain drag stays VTE text
+/// selection. Bubble means the handle chip — no gate. Either way the
+/// drag icon is a snapshot of the whole pane.
+fn pane_drag_source(
+    id: &str,
+    pane_root: &gtk::Overlay,
+    phase: gtk::PropagationPhase,
+) -> gtk::DragSource {
+    let drag = gtk::DragSource::new();
+    drag.set_actions(gtk::gdk::DragAction::MOVE);
+    drag.set_propagation_phase(phase);
+    let require_alt = phase == gtk::PropagationPhase::Capture;
+    let id = id.to_owned();
+    drag.connect_prepare(move |source, _, _| {
+        (!require_alt
+            || source
+                .current_event_state()
+                .contains(gtk::gdk::ModifierType::ALT_MASK))
+        .then(|| gtk::gdk::ContentProvider::for_value(&PaneDrag(id.clone()).to_value()))
+    });
+    let pane_root = pane_root.downgrade();
+    drag.connect_drag_begin(move |source, _| {
+        if let Some(root) = pane_root.upgrade() {
+            source.set_icon(Some(&gtk::WidgetPaintable::new(Some(&root))), 0, 0);
+        }
+    });
+    drag
 }
 
 fn spawn(

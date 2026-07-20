@@ -110,9 +110,10 @@ pub(crate) fn show(ctx: &Rc<Ctx>) {
         }
     }
 
-    // Alt+drag is a pointer gesture, not a rebindable accelerator.
+    // A pointer gesture, not a rebindable accelerator; the hover
+    // handle in a pane's corner does the same without the modifier.
     panes.push(shortcut_row(
-        "Move pane (swap, or drop on a workflow)",
+        "Move pane (also: drag its corner handle)",
         &["Alt", "Drag"].map(str::to_owned),
     ));
 
