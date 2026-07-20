@@ -1,8 +1,10 @@
 //! Data types shared by state, tmux naming, and the frontends.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
+
+use crate::config::PaneTemplate;
 
 /// One terminal in a workflow's grid.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -17,13 +19,26 @@ pub struct PaneSpec {
     /// panes recreated after a reboot; informational otherwise.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_dir: Option<PathBuf>,
+    /// Template command, passed to `new-session` on every attach: tmux
+    /// runs it only when that call *creates* the session — first open,
+    /// or a respawn after the session died (reboot) — never on
+    /// reattach. Stored so recreation re-runs it; `None` for panes
+    /// created by hand.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum PaneKind {
     Local,
-    Ssh { host: String },
+    Ssh {
+        host: String,
+        /// Remote start directory for the session, resolved on the
+        /// remote (`last_dir` is a local path and cannot serve).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        cwd: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -51,6 +66,7 @@ impl PaneSpec {
             id: new_pane_id(),
             kind: PaneKind::Local,
             last_dir: None,
+            run: None,
         }
     }
 
@@ -58,9 +74,51 @@ impl PaneSpec {
     pub fn new_ssh(host: impl Into<String>) -> Self {
         Self {
             id: new_pane_id(),
-            kind: PaneKind::Ssh { host: host.into() },
+            kind: PaneKind::Ssh {
+                host: host.into(),
+                cwd: None,
+            },
             last_dir: None,
+            run: None,
         }
+    }
+
+    /// A pane from a workflow template. A local `cwd` becomes the
+    /// spawn directory (`last_dir`, `~` expanded against `home`); an
+    /// SSH `cwd` stays a remote string.
+    #[must_use]
+    pub fn from_template(template: &PaneTemplate, home: &Path) -> Self {
+        let (kind, last_dir) = match &template.ssh {
+            Some(host) => (
+                PaneKind::Ssh {
+                    host: host.clone(),
+                    cwd: template.cwd.clone(),
+                },
+                None,
+            ),
+            None => (
+                PaneKind::Local,
+                template.cwd.as_deref().map(|cwd| expand_tilde(cwd, home)),
+            ),
+        };
+        Self {
+            id: new_pane_id(),
+            kind,
+            last_dir,
+            run: template.run.clone(),
+        }
+    }
+}
+
+/// `~` / `~/x` against `home`; anything else is returned as-is.
+#[must_use]
+pub fn expand_tilde(path: &str, home: &Path) -> PathBuf {
+    if path == "~" {
+        return home.to_path_buf();
+    }
+    match path.strip_prefix("~/") {
+        Some(rest) => home.join(rest),
+        None => PathBuf::from(path),
     }
 }
 
@@ -160,5 +218,64 @@ mod tests {
             .unwrap_or_else(|e| panic!("parse: {e}"));
         assert!(wf.stash);
         assert!(wf.panes.is_empty());
+    }
+
+    #[test]
+    fn pre_template_state_files_still_parse() {
+        // A PaneSpec written by an older build: no `run`, no ssh `cwd`.
+        let spec: PaneSpec =
+            toml::from_str("id = \"abc123\"\n[kind]\ntype = \"ssh\"\nhost = \"e@server\"\n")
+                .unwrap_or_else(|e| panic!("parse: {e}"));
+        assert_eq!(spec.run, None);
+        assert_eq!(
+            spec.kind,
+            PaneKind::Ssh {
+                host: "e@server".into(),
+                cwd: None,
+            }
+        );
+    }
+
+    #[test]
+    fn template_panes_split_cwd_by_kind() {
+        use crate::config::PaneTemplate;
+        let home = Path::new("/home/e");
+        let local = PaneSpec::from_template(
+            &PaneTemplate {
+                ssh: None,
+                cwd: Some("~/notes".into()),
+                run: Some("nvim .".into()),
+            },
+            home,
+        );
+        assert_eq!(local.kind, PaneKind::Local);
+        assert_eq!(local.last_dir.as_deref(), Some(Path::new("/home/e/notes")));
+        assert_eq!(local.run.as_deref(), Some("nvim ."));
+
+        let remote = PaneSpec::from_template(
+            &PaneTemplate {
+                ssh: Some("dev".into()),
+                cwd: Some("/opt/myproj".into()),
+                run: Some("claude".into()),
+            },
+            home,
+        );
+        assert_eq!(
+            remote.kind,
+            PaneKind::Ssh {
+                host: "dev".into(),
+                cwd: Some("/opt/myproj".into()),
+            }
+        );
+        assert_eq!(remote.last_dir, None, "a remote cwd is not a local path");
+    }
+
+    #[test]
+    fn tilde_expansion_touches_only_a_leading_tilde() {
+        let home = Path::new("/home/e");
+        assert_eq!(expand_tilde("~", home), Path::new("/home/e"));
+        assert_eq!(expand_tilde("~/dev", home), Path::new("/home/e/dev"));
+        assert_eq!(expand_tilde("/opt/x", home), Path::new("/opt/x"));
+        assert_eq!(expand_tilde("a/~b", home), Path::new("a/~b"));
     }
 }

@@ -207,6 +207,10 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
     let ssh_item = gio::MenuItem::new(Some("New SSH Pane…"), Some("win.new-ssh-pane"));
     ssh_item.set_attribute_value("accel", Some(&"<Ctrl><Shift>t".to_variant()));
     let new_menu = gio::Menu::new();
+    // the split button itself follows the focused pane's connection —
+    // this entry is the explicit way to a local shell from an SSH
+    // workflow
+    new_menu.append(Some("New Local Pane"), Some("win.new-local-pane"));
     new_menu.append_item(&ssh_item);
     let new_button = adw::SplitButton::builder()
         .icon_name("tab-new-symbolic")
@@ -387,6 +391,13 @@ fn install_actions(ctx: &Rc<Ctx>, window: &adw::ApplicationWindow) {
     {
         let ctx = ctx.clone();
         action.connect_activate(move |_, _| new_pane(&ctx));
+    }
+    window.add_action(&action);
+
+    let action = gio::SimpleAction::new("new-local-pane", None);
+    {
+        let ctx = ctx.clone();
+        action.connect_activate(move |_, _| add_pane(&ctx, PaneSpec::new_local()));
     }
     window.add_action(&action);
 
@@ -681,8 +692,44 @@ pub(crate) fn move_focus(ctx: &Rc<Ctx>, direction: Direction) {
     }
 }
 
+/// `Ctrl+T` / the header "+" click: the new pane inherits the focused
+/// pane's connection — an SSH pane focused means a new pane on the
+/// same host (and its declared start directory, but never its `run`
+/// command); a local pane, or an empty workflow, means a local shell.
+/// The "+" menu's New Local Pane is the explicit local escape hatch.
 fn new_pane(ctx: &Rc<Ctx>) {
-    add_pane(ctx, PaneSpec::new_local());
+    match focused_spec(ctx).map(|spec| spec.kind) {
+        Some(PaneKind::Ssh { host, cwd }) => {
+            ctx.state.borrow_mut().remember_host(&host);
+            let mut spec = PaneSpec::new_ssh(host);
+            if let PaneKind::Ssh { cwd: slot, .. } = &mut spec.kind {
+                *slot = cwd;
+            }
+            add_pane(ctx, spec);
+        }
+        _ => add_pane(ctx, PaneSpec::new_local()),
+    }
+}
+
+/// The spec of the active workflow's focused pane (or its first, when
+/// nothing was focused yet — the same fallback the copy shortcut uses).
+fn focused_spec(ctx: &Rc<Ctx>) -> Option<PaneSpec> {
+    let id = {
+        let views = ctx.views.borrow();
+        let active = ctx.active.borrow();
+        views
+            .iter()
+            .find(|view| view.name.eq_ignore_ascii_case(&active))
+            .and_then(|view| {
+                view.focused
+                    .clone()
+                    .or_else(|| view.panes.first().map(|pane| pane.id.clone()))
+            })
+    }?;
+    current_workflow(ctx)?
+        .panes
+        .into_iter()
+        .find(|spec| spec.id == id)
 }
 
 fn new_ssh_pane(ctx: &Rc<Ctx>, host: &str) {
@@ -965,7 +1012,7 @@ fn close_focused_pane(ctx: &Rc<Ctx>) {
         // Mid-reconnect there is no live client whose exit could drive
         // the removal: kill the remote session best-effort and remove
         // the pane directly.
-        (PaneKind::Ssh { host }, _) if reconnecting => {
+        (PaneKind::Ssh { host, .. }, _) if reconnecting => {
             run_detached(
                 ctx,
                 ssh::kill_remote_argv(host, &session),
@@ -973,7 +1020,7 @@ fn close_focused_pane(ctx: &Rc<Ctx>) {
             );
             remove_pane(ctx, &id);
         }
-        (PaneKind::Ssh { host }, _) => {
+        (PaneKind::Ssh { host, .. }, _) => {
             run_detached(
                 ctx,
                 ssh::kill_remote_argv(host, &session),
@@ -1076,7 +1123,23 @@ fn create_workflow(ctx: &Rc<Ctx>, name: &str) {
         return;
     }
     let mut workflow = Workflow::new(name, glib::home_dir());
-    workflow.panes.push(PaneSpec::new_local());
+    // A config template for this name declares the starting panes; an
+    // empty or absent template means the usual single local shell.
+    workflow.panes = ctx
+        .config
+        .borrow()
+        .template_for(name)
+        .map(|template| {
+            template
+                .panes
+                .iter()
+                .map(|pane| PaneSpec::from_template(pane, &glib::home_dir()))
+                .collect()
+        })
+        .unwrap_or_default();
+    if workflow.panes.is_empty() {
+        workflow.panes.push(PaneSpec::new_local());
+    }
     ctx.state.borrow_mut().workflows.push(workflow.clone());
     build_view(ctx, &workflow, &[]);
     switch_to(ctx, name);
@@ -1137,7 +1200,7 @@ fn apply_rename(ctx: &Rc<Ctx>, old: &str, new: &str) {
                     }
                 }
                 PaneKind::Local => {}
-                PaneKind::Ssh { host } => run_detached(
+                PaneKind::Ssh { host, .. } => run_detached(
                     ctx,
                     ssh::rename_remote_argv(host, &from, &to),
                     "Could not rename a remote session",
@@ -1277,7 +1340,7 @@ fn apply_delete(ctx: &Rc<Ctx>, name: &str) {
                     "Could not kill a session",
                 );
             }
-            PaneKind::Ssh { host } => {
+            PaneKind::Ssh { host, .. } => {
                 run_detached(
                     ctx,
                     ssh::kill_remote_argv(host, &session),

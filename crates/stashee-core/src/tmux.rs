@@ -69,9 +69,18 @@ fn socket_argv(args: &[&str]) -> Vec<String> {
 /// attach does (`;` is tmux's command separator; no shell involved
 /// here, so it needs no escaping). `set` alone cannot start a server,
 /// hence the explicit `start-server`.
+///
+/// `run` (a workflow-template command) rides on `new-session`, which
+/// executes it only when the call actually creates the session —
+/// reattaching ignores it, so the command can never fire twice.
 #[must_use]
-pub fn attach_local_argv(tmux_conf: &Path, session: &str, dir: &Path) -> Vec<String> {
-    socket_argv(&[
+pub fn attach_local_argv(
+    tmux_conf: &Path,
+    session: &str,
+    dir: &Path,
+    run: Option<&str>,
+) -> Vec<String> {
+    let mut argv = socket_argv(&[
         "-f",
         &tmux_conf.display().to_string(),
         "start-server",
@@ -87,7 +96,19 @@ pub fn attach_local_argv(tmux_conf: &Path, session: &str, dir: &Path) -> Vec<Str
         session,
         "-c",
         &dir.display().to_string(),
-    ])
+    ]);
+    if let Some(run) = run {
+        argv.push(run_then_shell(run));
+    }
+    argv
+}
+
+/// `<command>; exec $SHELL` — a session's startup command that leaves
+/// a shell behind when it exits, so the pane never dies with it. tmux
+/// hands session commands to `sh -c`, which resolves the fallback.
+#[must_use]
+pub fn run_then_shell(command: &str) -> String {
+    format!("{command}; exec \"${{SHELL:-/bin/sh}}\"")
 }
 
 /// argv to pre-create the very first launch's pane session, detached:
@@ -102,10 +123,10 @@ pub fn welcome_session_argv(
     dir: &Path,
     exe: &Path,
 ) -> Vec<String> {
-    let command = format!(
-        "{} --welcome; exec \"${{SHELL:-/bin/sh}}\"",
+    let command = run_then_shell(&format!(
+        "{} --welcome",
         shell_quote(&exe.display().to_string())
-    );
+    ));
     socket_argv(&[
         "-f",
         &tmux_conf.display().to_string(),
@@ -120,8 +141,10 @@ pub fn welcome_session_argv(
 }
 
 /// Single-quote `text` for sh — tmux hands the session command to
-/// `sh -c`, and the executable path is not ours to trust.
-fn shell_quote(text: &str) -> String {
+/// `sh -c`, and the executable path is not ours to trust. The SSH
+/// module reuses it to keep template arguments whole across the
+/// remote shell.
+pub(crate) fn shell_quote(text: &str) -> String {
     format!("'{}'", text.replace('\'', r"'\''"))
 }
 
@@ -240,6 +263,7 @@ mod tests {
             Path::new("/usr/share/stashee/tmux.conf"),
             "stashee-work-abc123",
             Path::new("/home/e/dev"),
+            None,
         );
         assert_eq!(
             argv,
@@ -263,6 +287,20 @@ mod tests {
                 "-c",
                 "/home/e/dev",
             ]
+        );
+    }
+
+    #[test]
+    fn a_template_run_rides_on_new_session_and_keeps_the_shell() {
+        let argv = attach_local_argv(
+            Path::new("/data/tmux.conf"),
+            "stashee-work-abc123",
+            Path::new("/home/e/dev"),
+            Some("claude"),
+        );
+        assert_eq!(
+            argv.last().map(String::as_str),
+            Some("claude; exec \"${SHELL:-/bin/sh}\"")
         );
     }
 
