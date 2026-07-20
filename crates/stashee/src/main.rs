@@ -10,6 +10,7 @@ mod proxy;
 mod settings;
 mod shortcuts;
 mod sidebar;
+mod voice;
 mod window;
 
 use gtk4 as gtk;

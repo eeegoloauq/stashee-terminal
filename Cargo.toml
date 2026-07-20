@@ -1,6 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["crates/stashee-core", "crates/stashee-pty", "crates/stashee"]
+members = [
+    "crates/stashee-core",
+    "crates/stashee-pty",
+    "crates/stashee-voice",
+    "crates/stashee",
+]
 
 [workspace.package]
 version = "0.1.16"

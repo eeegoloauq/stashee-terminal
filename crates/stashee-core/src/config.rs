@@ -18,6 +18,7 @@ pub struct Config {
     pub appearance: Appearance,
     pub behavior: Behavior,
     pub keys: Keys,
+    pub voice: Voice,
     /// Workflow templates, keyed by workflow name. Applied once, when
     /// a workflow with a matching name (by tmux slug, so "My Proj" and
     /// "my-proj" collide here exactly as everywhere else) is created.
@@ -78,6 +79,14 @@ impl Default for Behavior {
     }
 }
 
+/// Voice input (roadmap v2, shipping in pieces) — strictly opt-in,
+/// off by default, per SPEC.md "Voice input".
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Voice {
+    pub enabled: bool,
+}
+
 /// Keybindings in GTK accelerator syntax (`"<Ctrl><Shift>t"`,
 /// `"<Alt>Left"`). An empty string disables the binding. Validation
 /// happens in the frontend — this crate never depends on GTK.
@@ -93,6 +102,7 @@ pub struct Keys {
     pub focus_down: String,
     pub copy: String,
     pub paste: String,
+    pub voice: String,
 }
 
 impl Default for Keys {
@@ -107,6 +117,7 @@ impl Default for Keys {
             focus_down: "<Alt>Down".to_owned(),
             copy: "<Ctrl><Shift>c".to_owned(),
             paste: "<Ctrl><Shift>v".to_owned(),
+            voice: "<Ctrl><Shift>space".to_owned(),
         }
     }
 }
@@ -146,6 +157,15 @@ impl Config {
 # focus_down = \"<Alt>Down\"
 # copy = \"<Ctrl><Shift>c\"
 # paste = \"<Ctrl><Shift>v\"
+## Voice input toggle — does nothing unless [voice] enabled below.
+# voice = \"<Ctrl><Shift>space\"
+
+[voice]
+## Voice input, an experimental preview of the v2 feature: the voice
+## key starts recording into the focused pane, pressing it again
+## stops, Esc cancels. Capture runs through PipeWire (`pw-record`).
+## Speech recognition itself is not wired up yet.
+# enabled = false
 
 ## Workflow templates: declare the panes a workflow starts with. When
 ## a workflow with a matching name is created — `stashee myproj` or the

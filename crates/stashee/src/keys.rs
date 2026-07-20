@@ -23,6 +23,7 @@ use vte4::prelude::*;
 use stashee_core::config::Keys;
 use stashee_core::layout::Direction;
 
+use crate::voice;
 use crate::window::{Ctx, focused_terminal, move_focus, switch_nth};
 
 /// One parsed binding: an accelerator and what it runs.
@@ -184,11 +185,26 @@ pub(crate) fn install_shortcuts(ctx: &Rc<Ctx>, window: &adw::ApplicationWindow) 
             }),
         });
     }
+    if let Some((keyval, modifiers)) = parse(&keys.voice, &defaults.voice, "voice", &mut warnings) {
+        let ctx = ctx.clone();
+        bindings.push(Binding {
+            keyval,
+            modifiers,
+            run: Box::new(move || voice::toggle(&ctx)),
+        });
+    }
 
     // Capture phase, so the shortcuts win over the terminal's input.
     let controller = gtk::EventControllerKey::new();
     controller.set_propagation_phase(gtk::PropagationPhase::Capture);
-    controller.connect_key_pressed(move |controller, _, _, _| {
+    let ctx_for_events = ctx.clone();
+    controller.connect_key_pressed(move |controller, keyval, _, _| {
+        // Esc belongs to the shell — except while a voice recording
+        // runs; then it cancels the recording and goes no further.
+        if keyval == gdk::Key::Escape && voice::active(&ctx_for_events) {
+            voice::cancel(&ctx_for_events);
+            return glib::Propagation::Stop;
+        }
         let Some(event) = controller
             .current_event()
             .and_then(|event| event.downcast::<gdk::KeyEvent>().ok())

@@ -130,6 +130,18 @@ pub(crate) fn show(ctx: &Rc<Ctx>) {
         }
     }
 
+    // Voice input hides its row until the feature is opted into —
+    // a shortcut that only answers "it's disabled" is noise.
+    let mut voice = Vec::new();
+    if ctx.config.borrow().voice.enabled
+        && let Some(caps) = keycaps(&keys.voice)
+    {
+        voice.push(shortcut_row(
+            "Voice input (again stops, Esc cancels)",
+            &caps,
+        ));
+    }
+
     let page = gtk::Box::new(gtk::Orientation::Vertical, 24);
     page.set_margin_top(12);
     page.set_margin_bottom(24);
@@ -139,6 +151,7 @@ pub(crate) fn show(ctx: &Rc<Ctx>) {
         ("Panes", panes),
         ("Workflows", workflows),
         ("Clipboard", clipboard),
+        ("Voice", voice),
     ] {
         if rows.is_empty() {
             continue;
