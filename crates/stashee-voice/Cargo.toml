@@ -1,0 +1,13 @@
+[package]
+name = "stashee-voice"
+description = "Voice input capture for stashee-terminal: microphone audio via a pw-record subprocess, plus the speech-to-text backend contract."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true

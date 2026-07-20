@@ -722,6 +722,7 @@ dependencies = [
  "libadwaita",
  "stashee-core",
  "stashee-pty",
+ "stashee-voice",
  "tracing",
  "tracing-subscriber",
  "vte4",
@@ -744,6 +745,14 @@ name = "stashee-pty"
 version = "0.1.16"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "stashee-voice"
+version = "0.1.16"
+dependencies = [
+ "anyhow",
+ "tracing",
 ]
 
 [[package]]
