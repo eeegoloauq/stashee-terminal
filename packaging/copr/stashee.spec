@@ -13,6 +13,8 @@ URL:            https://github.com/eeegoloauq/stashee-terminal
 Source0:        %{url}/archive/v%{version}/stashee-terminal-%{version}.tar.gz
 
 BuildRequires:  gcc
+# g++ owns libstdc++.so — the static onnxruntime (voice input) links it
+BuildRequires:  gcc-c++
 BuildRequires:  rust
 BuildRequires:  cargo
 BuildRequires:  gtk4-devel

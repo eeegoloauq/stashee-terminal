@@ -19,7 +19,7 @@ jobs:
       # checkout is a JS action: the container must already have node,
       # and git makes checkout clone instead of the flaky REST download.
       - name: Install toolchain and build dependencies
-        run: dnf install -y nodejs git gcc rust cargo rustfmt clippy gtk4-devel libadwaita-devel vte291-gtk4-devel
+        run: dnf install -y nodejs git gcc gcc-c++ rust cargo rustfmt clippy gtk4-devel libadwaita-devel vte291-gtk4-devel
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
         with:
