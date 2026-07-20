@@ -131,6 +131,10 @@ impl Config {
 ## Everything here is optional: the values below are the defaults,
 ## commented out — uncomment a line to override it. The running app
 ## picks up saved changes instantly. `stashee config` opens this file.
+##
+## This copy is yours — updates never rewrite it. Options added by
+## newer versions appear in config.toml.default next to this file,
+## which is regenerated on every launch.
 
 [appearance]
 ## Window backdrop opacity, 0.0 to 1.0.
@@ -215,6 +219,20 @@ impl Config {
     /// existing file — whatever its content — is never touched.
     pub fn ensure(path: &Path) -> Result<()> {
         if path.exists() {
+            return Ok(());
+        }
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).with_context(|| format!("creating {}", parent.display()))?;
+        }
+        fs::write(path, Self::TEMPLATE).with_context(|| format!("writing {}", path.display()))
+    }
+
+    /// Keep `config.toml.default` — the full commented template of
+    /// *this* build — current next to the user's config. The user's
+    /// own file is never rewritten (see [`ensure`]), so this reference
+    /// is how options added by newer versions become discoverable.
+    pub fn ensure_reference(path: &Path) -> Result<()> {
+        if fs::read_to_string(path).is_ok_and(|current| current == Self::TEMPLATE) {
             return Ok(());
         }
         if let Some(parent) = path.parent() {
@@ -335,6 +353,21 @@ cwd = "~/notes"
         assert!(config.template_for("my-proj").is_some());
         assert!(config.template_for("MY PROJ").is_some());
         assert!(config.template_for("other").is_none());
+    }
+
+    #[test]
+    fn reference_is_created_and_kept_current() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml.default");
+        Config::ensure_reference(&path).unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), Config::TEMPLATE);
+        // A stale copy from an older version is replaced...
+        fs::write(&path, "## old template\n").unwrap();
+        Config::ensure_reference(&path).unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), Config::TEMPLATE);
+        // ...and a current one is left alone (no pointless rewrite).
+        Config::ensure_reference(&path).unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), Config::TEMPLATE);
     }
 
     #[test]

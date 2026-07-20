@@ -161,6 +161,14 @@ fn start(ctx: &Rc<Ctx>) {
 
     let history = Rc::new(RefCell::new(VecDeque::from(vec![0.0; BARS])));
     let (pill, live, busy, wave) = build_pill(&history);
+    // Clicking the recording indicator stops it, like GNOME's own
+    // screen-recording dot; Esc stays the cancel.
+    let click = gtk::GestureClick::new();
+    {
+        let ctx = ctx.clone();
+        click.connect_released(move |_, _, _, _| stop(&ctx));
+    }
+    pill.add_controller(click);
     overlay.add_overlay(&pill);
 
     let epoch = EPOCH.with(|epoch| {
@@ -500,7 +508,10 @@ fn build_pill(
     pill.set_halign(gtk::Align::Center);
     pill.set_valign(gtk::Align::End);
     pill.set_margin_bottom(14);
-    pill.set_tooltip_text(Some("Recording — the voice key stops, Esc cancels"));
+    pill.set_cursor_from_name(Some("pointer"));
+    pill.set_tooltip_text(Some(
+        "Recording — click (or the voice key) stops, Esc cancels",
+    ));
     pill.append(&live);
     pill.append(&busy);
     (pill.upcast(), live, busy, wave)

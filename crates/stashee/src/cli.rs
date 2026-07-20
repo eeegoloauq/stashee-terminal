@@ -133,6 +133,9 @@ pub fn edit_config() -> glib::ExitCode {
         eprintln!("stashee: {err:#}");
         return glib::ExitCode::FAILURE;
     }
+    if let Err(err) = Config::ensure_reference(&paths::config_reference()) {
+        eprintln!("stashee: {err:#}"); // reference only — still editable
+    }
     let editor = ["VISUAL", "EDITOR"]
         .iter()
         .find_map(|var| std::env::var(var).ok())
