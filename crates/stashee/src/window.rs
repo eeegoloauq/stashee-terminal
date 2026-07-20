@@ -295,6 +295,12 @@ fn build(app: &adw::Application) -> Result<adw::ApplicationWindow> {
             .connect_add(move || add_workflow_dialog(&for_add));
     }
     {
+        let for_drop = ctx.clone();
+        ctx.sidebar.connect_pane_drop(move |id, workflow| {
+            move_pane_to_workflow(&for_drop, id, workflow);
+        });
+    }
+    {
         let ctx = ctx.clone();
         window.connect_map(move |_| focus_active_pane(&ctx));
     }
@@ -532,6 +538,7 @@ fn callbacks(ctx: &Rc<Ctx>) -> pane::Callbacks {
     let for_exit = ctx.clone();
     let for_focus = ctx.clone();
     let for_dir = ctx.clone();
+    let for_drop = ctx.clone();
     pane::Callbacks {
         on_exited: Rc::new(move |id| remove_pane(&for_exit, id)),
         on_focus: Rc::new(move |id| {
@@ -544,7 +551,159 @@ fn callbacks(ctx: &Rc<Ctx>) -> pane::Callbacks {
             }
         }),
         on_dir_changed: Rc::new(move |id, dir| set_last_dir(&for_dir, id, dir)),
+        on_pane_drop: Rc::new(move |dragged, target| swap_panes(&for_drop, dragged, target)),
     }
+}
+
+/// Alt+drag dropped one pane onto another: swap their grid positions
+/// (the tiling convention — tmux `swap-pane`, i3 swap — and the only
+/// fully predictable move in an order-based grid). Order lives in two
+/// mirrors, state and the view; both swap, then the grid animates.
+fn swap_panes(ctx: &Rc<Ctx>, dragged: &str, target: &str) {
+    if dragged == target {
+        return;
+    }
+    let active = ctx.active.borrow().clone();
+    {
+        let mut state = ctx.state.borrow_mut();
+        let Some(workflow) = state
+            .workflows
+            .iter_mut()
+            .find(|wf| wf.name.eq_ignore_ascii_case(&active))
+        else {
+            return;
+        };
+        let (Some(from), Some(to)) = (
+            workflow.panes.iter().position(|pane| pane.id == dragged),
+            workflow.panes.iter().position(|pane| pane.id == target),
+        ) else {
+            return;
+        };
+        workflow.panes.swap(from, to);
+    }
+    if let Some(index) = view_index(ctx, &active) {
+        {
+            let mut views = ctx.views.borrow_mut();
+            if let Some(view) = views.get_mut(index)
+                && let (Some(from), Some(to)) = (
+                    view.panes.iter().position(|pane| pane.id == dragged),
+                    view.panes.iter().position(|pane| pane.id == target),
+                )
+            {
+                view.panes.swap(from, to);
+            }
+        }
+        refresh_view(ctx, index);
+    }
+    save(ctx);
+}
+
+/// Alt+drag dropped a pane onto a sidebar workflow: the pane moves
+/// there live — the widget (and its running client) is reparented, and
+/// the tmux session is renamed so the new workflow owns it across
+/// restarts. The same session-follows-name rule as workflow rename.
+fn move_pane_to_workflow(ctx: &Rc<Ctx>, id: &str, target: &str) {
+    let source = ctx
+        .state
+        .borrow()
+        .workflows
+        .iter()
+        .find(|wf| wf.panes.iter().any(|pane| pane.id == id))
+        .map(|wf| wf.name.clone());
+    let Some(source) = source else {
+        return;
+    };
+    if source.eq_ignore_ascii_case(target) {
+        return;
+    }
+    let spec = ctx
+        .state
+        .borrow()
+        .workflows
+        .iter()
+        .flat_map(|wf| wf.panes.iter())
+        .find(|spec| spec.id == id)
+        .cloned();
+    let Some(spec) = spec else {
+        return;
+    };
+
+    let from = tmux::session_name(&source, id);
+    let to = tmux::session_name(target, id);
+    if from != to {
+        let stashed = stashed_pane_ids(ctx, &source).contains(&spec.id);
+        match &spec.kind {
+            PaneKind::Local if stashed => {
+                // synchronous like workflow rename: local tmux answers
+                // instantly and a failed rename must not pass silently
+                let argv = tmux::rename_session_argv(&from, &to);
+                match Command::new(&argv[0]).args(&argv[1..]).output() {
+                    Ok(out) if out.status.success() => {}
+                    Ok(out) => {
+                        let stderr = String::from_utf8_lossy(&out.stderr);
+                        tracing::error!("moving {from}: {}", stderr.trim());
+                        toast(ctx, "Could not rename the pane's tmux session");
+                        return;
+                    }
+                    Err(err) => {
+                        tracing::error!("moving {from}: {err}");
+                        toast(ctx, "Could not rename the pane's tmux session");
+                        return;
+                    }
+                }
+            }
+            PaneKind::Local => {} // plain shell: no session to rename
+            PaneKind::Ssh { host, .. } => run_detached(
+                ctx,
+                ssh::rename_remote_argv(host, &from, &to),
+                "Could not rename the remote session",
+            ),
+        }
+    }
+
+    {
+        let mut state = ctx.state.borrow_mut();
+        for wf in &mut state.workflows {
+            wf.panes.retain(|pane| pane.id != id);
+        }
+        if let Some(wf) = state
+            .workflows
+            .iter_mut()
+            .find(|wf| wf.name.eq_ignore_ascii_case(target))
+        {
+            wf.panes.push(spec);
+        }
+    }
+
+    let (Some(src), Some(dst)) = (view_index(ctx, &source), view_index(ctx, target)) else {
+        save(ctx);
+        return;
+    };
+    let moved = {
+        let mut views = ctx.views.borrow_mut();
+        let Some(view) = views.get_mut(src) else {
+            return;
+        };
+        let Some(pos) = view.panes.iter().position(|pane| pane.id == id) else {
+            return;
+        };
+        if view.focused.as_deref() == Some(id) {
+            view.focused = None;
+        }
+        let pane = view.panes.remove(pos);
+        *pane.session.borrow_mut() = to;
+        pane
+    };
+    // source first: its grid unparents the widget, then the target's
+    // grid adopts it — the pane (and its running client) never respawns
+    refresh_view(ctx, src);
+    if let Some(view) = ctx.views.borrow_mut().get_mut(dst) {
+        view.panes.push(moved);
+    }
+    refresh_view(ctx, dst);
+    save(ctx);
+    focus_active_pane(ctx);
+    toast(ctx, &format!("Moved to “{target}”"));
 }
 
 /// OSC 7 from a pane: remember the directory it is in, so a plain-shell
@@ -1223,6 +1382,12 @@ fn apply_rename(ctx: &Rc<Ctx>, old: &str, new: &str) {
         && let Some(view) = ctx.views.borrow_mut().get_mut(index)
     {
         view.name = new.to_owned();
+        // live panes must learn the new session names: an SSH pane's
+        // reconnect attaches by name, and a stale one would recreate
+        // the old session on the remote
+        for pane in &view.panes {
+            *pane.session.borrow_mut() = tmux::session_name(new, &pane.id);
+        }
     }
     if ctx.active.borrow().eq_ignore_ascii_case(old) {
         *ctx.active.borrow_mut() = new.to_owned();

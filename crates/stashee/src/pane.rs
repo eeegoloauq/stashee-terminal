@@ -1,12 +1,13 @@
 //! One terminal pane: a VTE widget attached to its tmux session (or a
 //! plain shell for non-stashed workflows).
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::time::Duration;
 
 use gtk4 as gtk;
+use gtk4::glib;
 use gtk4::prelude::*;
 use libadwaita as adw;
 use vte4::prelude::*;
@@ -30,10 +31,22 @@ const RECONNECT_BANNER: &str = "Connection lost — reconnecting…";
 /// A reattached client outliving this window means the link is back.
 const RECONNECT_SETTLED: Duration = Duration::from_secs(10);
 
+/// Drag payload for Alt+drag pane moves: the pane id under a private
+/// boxed type, so nothing else — VTE's own text drop target included —
+/// can ever accept (and paste) it.
+#[derive(Clone, glib::Boxed)]
+#[boxed_type(name = "StasheePaneDrag")]
+pub struct PaneDrag(pub String);
+
 pub struct Pane {
     pub id: String,
     pub root: gtk::Widget,
     pub terminal: vte4::Terminal,
+    /// The pane's tmux session name. Shared with the SSH reconnect
+    /// path, and updated in place on workflow rename and cross-workflow
+    /// move — a reconnect must attach the session's *current* name, or
+    /// it would recreate the old one on the remote.
+    pub session: Rc<RefCell<String>>,
     /// Whether this pane runs inside tmux — fixed at build time
     /// (`Workflow::pane_stashed`), so flipping the workflow's stash
     /// toggle never changes how an existing pane is closed.
@@ -63,9 +76,12 @@ pub struct Callbacks {
     pub on_focus: Rc<dyn Fn(&str)>,
     /// OSC 7: the pane's shell reported a new working directory.
     pub on_dir_changed: OnDirChanged,
+    /// Alt+drag dropped one pane onto another: `(dragged, target)`.
+    pub on_pane_drop: OnPaneDrop,
 }
 
 pub type OnDirChanged = Rc<dyn Fn(&str, PathBuf)>;
+pub type OnPaneDrop = Rc<dyn Fn(&str, &str)>;
 
 pub fn build(
     spec: &PaneSpec,
@@ -102,7 +118,7 @@ pub fn build(
     });
     terminal.add_controller(paste);
 
-    let session = tmux::session_name(&workflow.name, &spec.id);
+    let session = Rc::new(RefCell::new(tmux::session_name(&workflow.name, &spec.id)));
     // A remembered directory may have been deleted since the last run;
     // spawning there would fail and silently drop the pane.
     let dir = spec
@@ -165,8 +181,15 @@ pub fn build(
                     } else {
                         // cwd/run ride along: they only apply if the
                         // remote session has to be recreated (remote
-                        // reboot) — a plain reattach ignores them.
-                        ssh::attach_remote_argv(&host, &session, cwd.as_deref(), run.as_deref())
+                        // reboot) — a plain reattach ignores them. The
+                        // session name is read live: a workflow rename
+                        // or cross-workflow move may have changed it.
+                        ssh::attach_remote_argv(
+                            &host,
+                            &session.borrow(),
+                            cwd.as_deref(),
+                            run.as_deref(),
+                        )
                     };
                     let delay = Duration::from_secs(1 << attempt.min(4));
                     let terminal = terminal.downgrade();
@@ -241,13 +264,13 @@ pub fn build(
     let argv = match (&spec.kind, stashed) {
         (PaneKind::Ssh { host, cwd }, _) => proxy::wrap(ssh::attach_remote_argv(
             host,
-            &session,
+            &session.borrow(),
             cwd.as_deref(),
             spec.run.as_deref(),
         )),
         (PaneKind::Local, true) => proxy::wrap(tmux::attach_local_argv(
             tmux_conf,
-            &session,
+            &session.borrow(),
             &dir,
             spec.run.as_deref(),
         )),
@@ -277,10 +300,48 @@ pub fn build(
     root.append(&banner);
     root.append(&terminal);
 
+    // Alt+drag moves the pane — onto another pane to swap places, onto
+    // a sidebar workflow to transfer. Capture phase with a modifier
+    // gate: a plain drag must stay VTE's text selection, so without
+    // Alt `prepare` declines and the terminal sees the events.
+    let drag = gtk::DragSource::new();
+    drag.set_actions(gtk::gdk::DragAction::MOVE);
+    drag.set_propagation_phase(gtk::PropagationPhase::Capture);
+    {
+        let id = spec.id.clone();
+        drag.connect_prepare(move |source, _, _| {
+            source
+                .current_event_state()
+                .contains(gtk::gdk::ModifierType::ALT_MASK)
+                .then(|| gtk::gdk::ContentProvider::for_value(&PaneDrag(id.clone()).to_value()))
+        });
+    }
+    drag.connect_drag_begin(|source, _| {
+        if let Some(widget) = source.widget() {
+            source.set_icon(Some(&gtk::WidgetPaintable::new(Some(&widget))), 0, 0);
+        }
+    });
+    root.add_controller(drag);
+
+    let drop = gtk::DropTarget::new(PaneDrag::static_type(), gtk::gdk::DragAction::MOVE);
+    {
+        let id = spec.id.clone();
+        let on_pane_drop = callbacks.on_pane_drop.clone();
+        drop.connect_drop(move |_, value, _, _| match value.get::<PaneDrag>() {
+            Ok(dragged) => {
+                on_pane_drop(&dragged.0, &id);
+                true
+            }
+            Err(_) => false,
+        });
+    }
+    root.add_controller(drop);
+
     Pane {
         id: spec.id.clone(),
         root: root.upcast(),
         terminal,
+        session,
         stashed,
         ssh_fallback,
         reconnecting,
