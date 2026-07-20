@@ -10,7 +10,8 @@ url="https://github.com/eeegoloauq/stashee-terminal"
 license=('MIT')
 depends=('gtk4' 'libadwaita' 'vte4' 'tmux')
 optdepends=('wl-clipboard: mouse-selection copy on Wayland'
-            'xclip: mouse-selection copy on X11')
+            'xclip: mouse-selection copy on X11'
+            'pipewire: microphone capture for voice input')
 options=('!strip' '!debug')
 
 package() {

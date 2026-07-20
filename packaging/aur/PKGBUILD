@@ -14,7 +14,8 @@ license=('MIT')
 depends=('gtk4' 'libadwaita' 'vte4' 'tmux')
 makedepends=('cargo')
 optdepends=('wl-clipboard: mouse-selection copy on Wayland'
-            'xclip: mouse-selection copy on X11')
+            'xclip: mouse-selection copy on X11'
+            'pipewire: microphone capture for voice input')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
 sha256sums=('b0625e996eaebb00de83096319942bb81f979afc6dc6bd2a19ddeee774c15d81')
 
