@@ -16,7 +16,7 @@ jobs:
     container: fedora:latest
     steps:
       - name: Install build dependencies
-        run: dnf install -y nodejs git gcc rust cargo gtk4-devel libadwaita-devel vte291-gtk4-devel rpm-build
+        run: dnf install -y nodejs git gcc gcc-c++ rust cargo gtk4-devel libadwaita-devel vte291-gtk4-devel rpm-build
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
         with:
