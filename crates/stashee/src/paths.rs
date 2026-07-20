@@ -15,6 +15,12 @@ pub fn state_file() -> PathBuf {
     glib::user_data_dir().join("stashee").join("state.toml")
 }
 
+/// Where downloaded voice models live (SPEC.md "Voice input").
+#[cfg(feature = "stt")]
+pub fn models_dir() -> PathBuf {
+    glib::user_data_dir().join("stashee").join("models")
+}
+
 /// Unix socket where the running app receives OSC 52 copies from the
 /// pane-side proxies (clipboard.rs serves it, proxy.rs connects).
 pub fn clipboard_socket() -> PathBuf {

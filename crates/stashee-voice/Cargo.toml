@@ -1,6 +1,6 @@
 [package]
 name = "stashee-voice"
-description = "Voice input capture for stashee-terminal: microphone audio via a pw-record subprocess, plus the speech-to-text backend contract."
+description = "Voice input for stashee-terminal: microphone capture via a pw-record subprocess and a minimal Parakeet ONNX speech-to-text engine."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -8,6 +8,27 @@ license.workspace = true
 [dependencies]
 anyhow.workspace = true
 tracing.workspace = true
+# Pinned exact: 2.0 release candidates change API between rcs. Slim
+# feature set — no ndarray (we index tensors by hand), rustls instead
+# of native-tls so builds need no OpenSSL headers.
+ort = { version = "=2.0.0-rc.12", optional = true, default-features = false, features = [
+    "std",
+    "download-binaries",
+    "tls-rustls",
+    "copy-dylibs",
+] }
+
+# `stt` is on by default; network-restricted package builds can drop it
+# (ort downloads an onnxruntime binary at build time) and still get the
+# recording UI.
+[features]
+default = ["stt"]
+stt = ["dep:ort"]
+
+# Dev harness: model download + transcription from the CLI.
+[[example]]
+name = "transcribe"
+required-features = ["stt"]
 
 [lints]
 workspace = true

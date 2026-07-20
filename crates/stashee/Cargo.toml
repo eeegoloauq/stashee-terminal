@@ -8,7 +8,7 @@ license.workspace = true
 [dependencies]
 stashee-core = { path = "../stashee-core" }
 stashee-pty = { path = "../stashee-pty" }
-stashee-voice = { path = "../stashee-voice" }
+stashee-voice = { path = "../stashee-voice", default-features = false }
 anyhow.workspace = true
 tracing.workspace = true
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -19,6 +19,13 @@ gtk4 = { version = "0.11", features = ["v4_14"] }
 # v1_5 (same Fedora 40+ baseline): AlertDialog
 libadwaita = { version = "0.9", features = ["v1_5"] }
 vte4 = "0.10"
+
+# Dropping `stt` (--no-default-features) builds the recording UI
+# without the ONNX stack — for build hosts that cannot let ort fetch
+# an onnxruntime binary.
+[features]
+default = ["stt"]
+stt = ["stashee-voice/stt"]
 
 [lints]
 workspace = true

@@ -12,6 +12,13 @@ use std::thread::JoinHandle;
 
 use anyhow::{Context, Result, bail};
 
+#[cfg(feature = "stt")]
+pub mod model;
+#[cfg(feature = "stt")]
+pub mod parakeet;
+#[cfg(feature = "stt")]
+pub mod stt;
+
 /// What `pw-record` is asked to resample to: 16 kHz mono s16 — the
 /// input format every candidate STT model shares.
 pub const SAMPLE_RATE: u32 = 16_000;
@@ -24,11 +31,10 @@ const CHUNK_SAMPLES: usize = 480;
 /// before this; the cap only guards against a runaway session.
 const MAX_SAMPLES: usize = SAMPLE_RATE as usize * 600;
 
-/// A speech-to-text engine. Implementations arrive with the model
-/// backends (SPEC.md roadmap v2: Parakeet first); the trait exists now
-/// so the frontend is wired against the contract from day one.
-pub trait Backend {
-    fn transcribe(&self, recording: &Recording) -> Result<String>;
+/// A speech-to-text engine (SPEC.md roadmap v2: Parakeet now, GigaAM
+/// and a cloud option later, all behind this one seam).
+pub trait Backend: Send {
+    fn transcribe(&mut self, recording: &Recording) -> Result<String>;
 }
 
 /// A finished capture, ready for a [`Backend`].
@@ -41,6 +47,15 @@ impl Recording {
     #[must_use]
     pub fn duration_secs(&self) -> f32 {
         self.samples.len() as f32 / SAMPLE_RATE as f32
+    }
+
+    /// The samples as f32 in `[-1, 1]` — what the STT models eat.
+    #[must_use]
+    pub fn samples_f32(&self) -> Vec<f32> {
+        self.samples
+            .iter()
+            .map(|&sample| f32::from(sample) / f32::from(i16::MAX))
+            .collect()
     }
 }
 
