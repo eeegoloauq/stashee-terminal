@@ -33,6 +33,29 @@ window.stashee .sidebar-panel list {
   border-color: rgba(120, 170, 255, 0.4);
 }
 
+/* Hover-revealed drag handle: an OSD chip overlaid on the pane's
+ * top-right corner (top-left is where the prompt lives). Zero layout
+ * impact — it floats above the terminal and only shows while the
+ * pointer is over the pane (.pane-hover, toggled in pane.rs). */
+.drag-handle {
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+  background-color: rgba(16, 18, 26, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 3px 10px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.pane-hover .drag-handle {
+  opacity: 1;
+}
+
+.drag-handle:hover {
+  background-color: rgba(40, 46, 62, 0.9);
+  color: rgba(255, 255, 255, 0.9);
+}
+
 /* Opaque token set for the system high-contrast (reduce-transparency)
  * setting; the window backdrop itself goes opaque via the runtime
  * provider in window.rs. */
@@ -44,4 +67,9 @@ window.stashee.reduced-transparency .sidebar-panel {
 window.stashee.reduced-transparency .pane {
   background-color: rgb(24, 26, 34);
   border-color: rgba(255, 255, 255, 0.25);
+}
+
+window.stashee.reduced-transparency .drag-handle {
+  background-color: rgb(30, 32, 40);
+  color: rgb(255, 255, 255);
 }
