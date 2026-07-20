@@ -350,11 +350,14 @@ fn model_dir() -> std::path::PathBuf {
     crate::paths::models_dir().join(stashee_voice::model::DIR_NAME)
 }
 
+/// Spawn the transcription worker, or nudge an existing one to
+/// (re)load the model it may have dropped after sitting idle.
 #[cfg(feature = "stt")]
 fn ensure_transcriber(ctx: &Rc<Ctx>) {
     let mut ctl = ctx.voice.borrow_mut();
-    if ctl.transcriber.is_none() {
-        ctl.transcriber = Some(stashee_voice::stt::Transcriber::spawn(model_dir()));
+    match &ctl.transcriber {
+        Some(transcriber) => transcriber.warm(),
+        None => ctl.transcriber = Some(stashee_voice::stt::Transcriber::spawn(model_dir())),
     }
 }
 
