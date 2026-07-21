@@ -13,7 +13,7 @@ Every pane runs inside a tmux session, so closing the app **stashes** a
 workflow instead of killing it. Reopen, and every shell is back exactly
 where it was.
 
-<img src="docs/shots/showcase.png" alt="a stashed workflow: Claude Code and btop in tiled panes" width="90%">
+<img src="docs/shots/first-run.png" alt="stashee on first launch" width="85%">
 
 </div>
 
