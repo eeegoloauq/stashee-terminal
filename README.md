@@ -48,7 +48,7 @@ where it was.
 | `Alt+1…9` | switch workflow |
 | `Ctrl+W` | close pane (the only way a pane dies on purpose) |
 | `Ctrl+Shift+V` | paste; a clipboard image becomes a file path, uploaded first on SSH panes |
-| `stashee config` | open the config file; changes apply live |
+| `stashee config` | open the config file; changes apply live ([all options](docs/config.toml.example)) |
 
 There is no settings GUI, no plugin system, no theme gallery. The scope
 is deliberately small.

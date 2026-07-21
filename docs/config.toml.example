@@ -1,0 +1,68 @@
+## stashee configuration.
+## Everything here is optional: the values below are the defaults,
+## commented out — uncomment a line to override it. The running app
+## picks up saved changes instantly. `stashee config` opens this file.
+##
+## This copy is yours — updates never rewrite it. Options added by
+## newer versions appear in config.toml.default next to this file,
+## which is regenerated on every launch.
+
+[appearance]
+## Window backdrop opacity, 0.0 to 1.0.
+# opacity = 0.88
+
+## Terminal font, a Pango description like "JetBrains Mono 12".
+## Empty picks the system monospace font.
+# font = ""
+
+[behavior]
+## Ask for confirmation before deleting a workflow.
+# confirm_workflow_delete = true
+
+[keys]
+## GTK accelerator syntax: modifiers in angle brackets, then the key —
+## "<Ctrl><Shift>t", "<Alt>Left", "F11". Set a binding to "" to
+## disable it. Alt+1..9 (switch to the n-th workflow) is fixed.
+# new_pane = "<Ctrl>t"
+# new_ssh_pane = "<Ctrl><Shift>t"
+# close_pane = "<Ctrl>w"
+# focus_left = "<Alt>Left"
+# focus_right = "<Alt>Right"
+# focus_up = "<Alt>Up"
+# focus_down = "<Alt>Down"
+# copy = "<Ctrl><Shift>c"
+# paste = "<Ctrl><Shift>v"
+## Voice input toggle — does nothing unless [voice] enabled below.
+# voice = "<Ctrl><Shift>space"
+
+[voice]
+## Voice input, an experimental preview of the v2 feature: the voice
+## key starts recording into the focused pane, pressing it again
+## stops, Esc cancels. Capture runs through PipeWire (`pw-record`);
+## recognition is local (NVIDIA Parakeet — first use offers the
+## one-time model download).
+# enabled = false
+
+## Minutes without dictation before the speech model is dropped to
+## give its ~1 GB of RAM back. Reloading takes a few seconds and
+## overlaps with the next recording. 0 keeps the model in memory for
+## the app's life.
+# unload_after_minutes = 60
+
+## Workflow templates: declare the panes a workflow starts with. When
+## a workflow with a matching name is created — `stashee myproj` or the
+## New Workflow dialog — its panes come from here instead of a single
+## default shell. `run` executes when a pane's tmux session is
+## *created* (never on reattach — reopening the app returns to the
+## running program), and the pane falls back to a shell when it exits.
+## Omit `ssh` for a local pane; `cwd` is resolved on the remote for SSH
+## panes (remote tmux >= 1.9 needed for `cwd` over SSH).
+##
+##   [[workflows.myproj.panes]]
+##   ssh = "dev"                  # a Host alias from ~/.ssh/config
+##   cwd = "/opt/myproj"
+##   run = "claude"
+##
+##   [[workflows.myproj.panes]]    # second pane: plain remote shell
+##   ssh = "dev"
+##   cwd = "/opt/myproj"

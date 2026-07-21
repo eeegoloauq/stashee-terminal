@@ -8,6 +8,7 @@ license.workspace = true
 [dependencies]
 anyhow.workspace = true
 tracing.workspace = true
+stashee-pty = { path = "../stashee-pty" }
 # Pinned exact: 2.0 release candidates change API between rcs. Slim
 # feature set — no ndarray (we index tensors by hand), rustls instead
 # of native-tls so builds need no OpenSSL headers.

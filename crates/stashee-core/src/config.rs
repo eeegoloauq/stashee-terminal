@@ -81,10 +81,24 @@ impl Default for Behavior {
 
 /// Voice input (roadmap v2, shipping in pieces) — strictly opt-in,
 /// off by default, per SPEC.md "Voice input".
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Voice {
     pub enabled: bool,
+    /// Minutes without dictation before the loaded speech model is
+    /// dropped to give its RAM back; `0` keeps it loaded for the
+    /// app's life. The default is long enough that a work session
+    /// with long pauses between dictations never waits on a reload.
+    pub unload_after_minutes: u64,
+}
+
+impl Default for Voice {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            unload_after_minutes: 60,
+        }
+    }
 }
 
 /// Keybindings in GTK accelerator syntax (`"<Ctrl><Shift>t"`,
@@ -167,9 +181,16 @@ impl Config {
 [voice]
 ## Voice input, an experimental preview of the v2 feature: the voice
 ## key starts recording into the focused pane, pressing it again
-## stops, Esc cancels. Capture runs through PipeWire (`pw-record`).
-## Speech recognition itself is not wired up yet.
+## stops, Esc cancels. Capture runs through PipeWire (`pw-record`);
+## recognition is local (NVIDIA Parakeet — first use offers the
+## one-time model download).
 # enabled = false
+
+## Minutes without dictation before the speech model is dropped to
+## give its ~1 GB of RAM back. Reloading takes a few seconds and
+## overlaps with the next recording. 0 keeps the model in memory for
+## the app's life.
+# unload_after_minutes = 60
 
 ## Workflow templates: declare the panes a workflow starts with. When
 ## a workflow with a matching name is created — `stashee myproj` or the
@@ -294,6 +315,37 @@ mod tests {
         assert_eq!(config.keys.new_pane, "<Ctrl>n");
         assert_eq!(config.keys.close_pane, "");
         assert_eq!(config.keys.copy, "<Ctrl><Shift>c");
+    }
+
+    /// `docs/config.toml.example` is the browsable copy of the
+    /// first-run template — for people reading the repo, not their
+    /// disk. This keeps it byte-identical to the code; refresh it
+    /// with `STASHEE_REGEN=1 cargo test -p stashee-core`.
+    #[test]
+    fn example_file_in_docs_matches_template() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/config.toml.example"
+        );
+        if std::env::var_os("STASHEE_REGEN").is_some() {
+            fs::write(path, Config::TEMPLATE).unwrap();
+        }
+        assert_eq!(
+            fs::read_to_string(path).unwrap(),
+            Config::TEMPLATE,
+            "docs/config.toml.example is stale — refresh with STASHEE_REGEN=1 cargo test -p stashee-core"
+        );
+    }
+
+    #[test]
+    fn voice_options_load_over_defaults() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        fs::write(&path, "[voice]\nenabled = true\nunload_after_minutes = 0\n").unwrap();
+        let config = Config::load(&path).unwrap();
+        assert!(config.voice.enabled);
+        assert_eq!(config.voice.unload_after_minutes, 0);
+        assert_eq!(Voice::default().unload_after_minutes, 60);
     }
 
     #[test]
