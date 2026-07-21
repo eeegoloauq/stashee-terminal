@@ -13,7 +13,7 @@ Every pane runs inside a tmux session, so closing the app **stashes** a
 workflow instead of killing it. Reopen, and every shell is back exactly
 where it was.
 
-<img src="docs/shots/welcome.png" alt="stashee on first launch" width="85%">
+<img src="docs/shots/showcase.png" alt="a stashed workflow: Claude Code and btop in tiled panes" width="90%">
 
 </div>
 
@@ -26,13 +26,16 @@ where it was.
 - SSH panes are stashed too. A pane on a remote host survives reboots
   and dropped connections, and remote copy lands in the local
   clipboard.
+- Files and screenshots go the other way: drop a file (or paste an
+  image) into an SSH pane and it is uploaded over scp; the pane gets
+  the remote path, ready for whatever CLI is asking for one.
 - Native. Rust, GTK4, libadwaita, and VTE (the terminal engine behind
   GNOME Terminal and Ptyxis). No Electron, no webviews, no daemons.
 
 <p align="center">
-  <img src="docs/shots/dev.png" alt="three coding agents in a stashed workflow" width="90%">
+  <img src="docs/shots/agents.png" alt="two coding agents in a stashed workflow" width="90%">
   <br>
-  <sub>Three coding agents in a stashed workflow. Closing the window kills none of them.</sub>
+  <sub>A coding agent per project in one stashed workflow. Closing the window kills neither.</sub>
 </p>
 
 ## Usage
@@ -44,10 +47,25 @@ where it was.
 | `Ctrl+Shift+T` | new SSH pane |
 | `Alt+1…9` | switch workflow |
 | `Ctrl+W` | close pane (the only way a pane dies on purpose) |
+| `Ctrl+Shift+V` | paste; a clipboard image becomes a file path, uploaded first on SSH panes |
 | `stashee config` | open the config file; changes apply live |
 
 There is no settings GUI, no plugin system, no theme gallery. The scope
 is deliberately small.
+
+## Voice input (experimental)
+
+Local dictation, off by default: set `[voice] enabled = true` in the
+config, press `Ctrl+Shift+Space`, speak, press it again. The
+transcript is typed into the focused pane, no trailing newline —
+review, then hit Enter. Recognition runs on the CPU (NVIDIA's
+Parakeet model, 25 languages); the model is a one-time ~670 MB
+download behind an explicit consent dialog. Nothing leaves the
+machine.
+
+<p align="center">
+  <img src="docs/shots/voice.png" alt="dictating into a pane: the recording pill and the transcribed text" width="60%">
+</p>
 
 ## Install
 
