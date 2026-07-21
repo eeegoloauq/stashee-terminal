@@ -47,7 +47,7 @@ const LOGO: [(&str, &str); 6] = [
 
 const TAGLINE: &str = "a tiling terminal workspace — shells never die by accident";
 
-const KEYS: [(&str, &str); 5] = [
+const KEYS: [(&str, &str); 6] = [
     ("Ctrl+T", "new pane — the grid tiles itself"),
     (
         "Ctrl+Shift+T",
@@ -56,6 +56,10 @@ const KEYS: [(&str, &str); 5] = [
     ("Ctrl+W", "close pane (kills its shell)"),
     ("Alt+1…9", "switch workflow"),
     ("Alt+Arrows", "move focus between panes"),
+    (
+        "Ctrl+Shift+V",
+        "paste — a copied image lands as a file path (scp'd to SSH hosts)",
+    ),
 ];
 
 const COMMANDS: [(&str, &str); 4] = [

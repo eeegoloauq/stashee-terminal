@@ -26,9 +26,9 @@ where it was.
 - SSH panes are stashed too. A pane on a remote host survives reboots
   and dropped connections, and remote copy lands in the local
   clipboard.
-- Files and screenshots go the other way: drop a file (or paste an
-  image) into an SSH pane and it is uploaded over scp; the pane gets
-  the remote path, ready for whatever CLI is asking for one.
+- Files go the other way too: drop a file or paste a screenshot into
+  an SSH pane — it is scp'd up and the remote path is typed at the
+  prompt.
 - Native. Rust, GTK4, libadwaita, and VTE (the terminal engine behind
   GNOME Terminal and Ptyxis). No Electron, no webviews, no daemons.
 
@@ -57,11 +57,10 @@ is deliberately small.
 
 Local dictation, off by default: set `[voice] enabled = true` in the
 config, press `Ctrl+Shift+Space`, speak, press it again. The
-transcript is typed into the focused pane, no trailing newline —
-review, then hit Enter. Recognition runs on the CPU (NVIDIA's
-Parakeet model, 25 languages); the model is a one-time ~670 MB
-download behind an explicit consent dialog. Nothing leaves the
-machine.
+transcript is typed into the focused pane, never auto-sent.
+Recognition runs on the CPU (NVIDIA's Parakeet model, 25 languages);
+the model is a one-time ~670 MB download behind an explicit consent
+dialog. Nothing leaves the machine.
 
 <p align="center">
   <img src="docs/shots/voice.png" alt="dictating into a pane: the recording pill and the transcribed text" width="60%">
