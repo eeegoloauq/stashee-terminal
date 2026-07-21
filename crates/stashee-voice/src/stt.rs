@@ -1,7 +1,7 @@
 //! The transcription worker: one thread that owns the model for the
 //! app's life, loading it on demand and dropping it again after a
-//! stretch of no dictation — the app can stay open for weeks without
-//! parking the model's RAM forever. A warm-up message is sent when
+//! caller-configured stretch of no dictation — the app can stay open
+//! for weeks without parking the model's RAM forever. A warm-up message is sent when
 //! recording starts, so the seconds of load time overlap with the
 //! user still speaking. The GTK side polls the per-job receiver from
 //! its frame tick; nothing here blocks the main thread.
@@ -15,16 +15,12 @@ use anyhow::{Context, Result, anyhow};
 use crate::Recording;
 use crate::parakeet::ParakeetEngine;
 
-/// Idle time before the loaded model is dropped. Long enough that a
-/// dictation session (a few commands in a row) never reloads between
-/// utterances; short enough that an always-on machine gets its RAM
-/// back soon after the user moves on. A later cold start costs
-/// little — loading restarts with the recording and overlaps speech.
-const IDLE_UNLOAD: Duration = Duration::from_secs(300);
-
 enum Msg {
     /// Recording just started: get the model loading now.
     Warm,
+    /// The idle-unload timeout changed (live config reload); `None`
+    /// keeps the model loaded for the app's life.
+    SetIdleUnload(Option<Duration>),
     Job(Job),
 }
 
@@ -39,14 +35,23 @@ pub struct Transcriber {
 
 impl Transcriber {
     /// Start the worker and begin loading the model from `model_dir`
-    /// immediately. Returns at once.
+    /// immediately. Returns at once. `idle_unload` is how long the
+    /// model survives without dictation before being dropped to free
+    /// its RAM (`None` = for the app's life) — policy belongs to the
+    /// caller's config, this crate just obeys it.
     #[must_use]
-    pub fn spawn(model_dir: PathBuf) -> Self {
+    pub fn spawn(model_dir: PathBuf, idle_unload: Option<Duration>) -> Self {
         let (msgs, inbox) = channel::<Msg>();
-        std::thread::spawn(move || worker(&model_dir, &inbox));
+        std::thread::spawn(move || worker(&model_dir, &inbox, idle_unload));
         let this = Self { msgs };
         this.warm();
         this
+    }
+
+    /// Apply a changed idle-unload timeout to the running worker —
+    /// the live config-reload path.
+    pub fn set_idle_unload(&self, idle_unload: Option<Duration>) {
+        let _ = self.msgs.send(Msg::SetIdleUnload(idle_unload));
     }
 
     /// Nudge the worker to (re)load the model — called when recording
@@ -75,18 +80,32 @@ impl Transcriber {
     }
 }
 
-fn worker(model_dir: &Path, inbox: &Receiver<Msg>) {
+fn worker(model_dir: &Path, inbox: &Receiver<Msg>, mut idle_unload: Option<Duration>) {
     let mut engine: Option<ParakeetEngine> = None;
     loop {
-        let msg = match inbox.recv_timeout(IDLE_UNLOAD) {
-            Ok(msg) => msg,
-            Err(RecvTimeoutError::Timeout) => {
-                if engine.take().is_some() {
-                    tracing::info!("voice model unloaded after {IDLE_UNLOAD:?} idle");
+        let msg = match idle_unload {
+            Some(timeout) => match inbox.recv_timeout(timeout) {
+                Ok(msg) => msg,
+                Err(RecvTimeoutError::Timeout) => {
+                    if engine.take().is_some() {
+                        // Freed buffers land in malloc arenas, which
+                        // keep the pages resident; without the trim
+                        // the model's ~1 GB never actually leaves the
+                        // process.
+                        stashee_pty::trim_malloc();
+                        tracing::info!("voice model unloaded after {timeout:?} idle");
+                    }
+                    continue;
                 }
-                continue;
-            }
-            Err(RecvTimeoutError::Disconnected) => return,
+                Err(RecvTimeoutError::Disconnected) => return,
+            },
+            // Unload disabled: block until the next message. A later
+            // SetIdleUnload is itself a message, so re-enabling wakes
+            // this arm and the new timeout takes over immediately.
+            None => match inbox.recv() {
+                Ok(msg) => msg,
+                Err(_) => return,
+            },
         };
         match msg {
             // A failed load is not cached: the next warm-up retries,
@@ -95,6 +114,7 @@ fn worker(model_dir: &Path, inbox: &Receiver<Msg>) {
             Msg::Warm => {
                 let _ = ensure_loaded(&mut engine, model_dir);
             }
+            Msg::SetIdleUnload(timeout) => idle_unload = timeout,
             Msg::Job(job) => {
                 let result = ensure_loaded(&mut engine, model_dir).and_then(|engine| {
                     let started = std::time::Instant::now();

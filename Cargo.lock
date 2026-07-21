@@ -1001,6 +1001,7 @@ version = "0.1.20"
 dependencies = [
  "anyhow",
  "ort",
+ "stashee-pty",
  "tracing",
 ]
 

@@ -1,6 +1,6 @@
 [package]
 name = "stashee-pty"
-description = "The workspace's only unsafe island: raw pty plumbing for the OSC 52 proxy."
+description = "The workspace's only unsafe island: raw pty plumbing for the OSC 52 proxy, plus the odd libc shim the other crates need."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

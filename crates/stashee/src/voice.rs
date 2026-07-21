@@ -350,14 +350,36 @@ fn model_dir() -> std::path::PathBuf {
     crate::paths::models_dir().join(stashee_voice::model::DIR_NAME)
 }
 
+/// The configured model idle-unload timeout: `[voice]
+/// unload_after_minutes`, where 0 means never unload.
+#[cfg(feature = "stt")]
+fn idle_unload(ctx: &Rc<Ctx>) -> Option<Duration> {
+    let minutes = ctx.config.borrow().voice.unload_after_minutes;
+    (minutes > 0).then(|| Duration::from_secs(minutes.saturating_mul(60)))
+}
+
 /// Spawn the transcription worker, or nudge an existing one to
 /// (re)load the model it may have dropped after sitting idle.
 #[cfg(feature = "stt")]
 fn ensure_transcriber(ctx: &Rc<Ctx>) {
+    let timeout = idle_unload(ctx);
     let mut ctl = ctx.voice.borrow_mut();
     match &ctl.transcriber {
         Some(transcriber) => transcriber.warm(),
-        None => ctl.transcriber = Some(stashee_voice::stt::Transcriber::spawn(model_dir())),
+        None => {
+            ctl.transcriber = Some(stashee_voice::stt::Transcriber::spawn(model_dir(), timeout));
+        }
+    }
+}
+
+/// Live config reload with a changed `[voice]` section: hand the new
+/// unload timeout to a running worker. Before the first recording (or
+/// without `stt`) there is nothing to update — the next spawn reads
+/// the config itself.
+pub(crate) fn apply_config(ctx: &Rc<Ctx>) {
+    #[cfg(feature = "stt")]
+    if let Some(transcriber) = &ctx.voice.borrow().transcriber {
+        transcriber.set_idle_unload(idle_unload(ctx));
     }
 }
 

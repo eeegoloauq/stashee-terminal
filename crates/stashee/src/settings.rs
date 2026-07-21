@@ -14,7 +14,7 @@ use libadwaita as adw;
 use stashee_core::config::Config;
 
 use crate::window::{Ctx, toast};
-use crate::{keys, pane, paths};
+use crate::{keys, pane, paths, voice};
 
 /// The window backdrop: user-configurable (`appearance.opacity`,
 /// live-reloadable) and system-overridable (high contrast forces it
@@ -143,5 +143,8 @@ fn reload_config(ctx: &Rc<Ctx>) {
         for message in keys::install_shortcuts(ctx, &window) {
             toast(ctx, &message);
         }
+    }
+    if new.voice != old.voice {
+        voice::apply_config(ctx);
     }
 }

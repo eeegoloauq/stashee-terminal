@@ -1,7 +1,8 @@
 //! Raw pty plumbing for the OSC 52 proxy (`stashee --osc52-proxy`):
 //! spawn a command on its own pty, keep its window size in step with
 //! ours, and put our side into raw mode. The workspace forbids
-//! `unsafe_code`; every libc call the proxy needs lives here instead,
+//! `unsafe_code`; every libc call the workspace needs — mostly the
+//! proxy's, plus the odd shim like [`trim_malloc`] — lives here
 //! behind small safe functions. Keep this crate minimal and boring.
 
 #![deny(unsafe_op_in_unsafe_fn)]
@@ -11,6 +12,20 @@ use std::io;
 use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
 use std::os::unix::process::CommandExt;
 use std::process::{Child, Command, Stdio};
+
+/// Ask glibc to hand freed arena pages back to the kernel. After a
+/// large one-off allocation is dropped (the voice model), malloc keeps
+/// the pages cached in its arenas and RSS never shrinks; this releases
+/// them. Cheap when there is nothing to give back. No-op off
+/// linux-gnu (musl has no malloc_trim).
+pub fn trim_malloc() {
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    // SAFETY: malloc_trim has no preconditions; it only walks
+    // malloc's own arenas.
+    unsafe {
+        libc::malloc_trim(0);
+    }
+}
 
 /// Open a pty sized like our stdin and spawn `argv` on its slave side,
 /// as a session leader with the slave as controlling terminal — that
