@@ -136,6 +136,46 @@ pub fn killed(wait_status: i32) -> bool {
     wait_status & 0x7f != 0 || (wait_status >> 8) & 0xff >= 128
 }
 
+/// argv to copy a local file onto `host`, for a file drop / image
+/// paste into one of its panes (the frontend's dnd module). Same
+/// fail-fast stance as [`ONESHOT_OPTS`]: scp runs headless, so
+/// BatchMode turns a would-be password prompt into a clean error —
+/// key or agent auth is the contract (a user-side ControlMaster in
+/// `~/.ssh/config` is honored automatically, but never injected here:
+/// the pane transport's reconnect semantics stay untouched).
+#[must_use]
+pub fn upload_argv(host: &str, local: &std::path::Path, remote: &str) -> Vec<String> {
+    let mut argv = vec!["scp".to_owned(), "-q".to_owned()];
+    argv.extend(ONESHOT_OPTS.iter().map(|&opt| opt.to_owned()));
+    argv.push("--".to_owned());
+    argv.push(local.display().to_string());
+    argv.push(format!("{host}:{remote}"));
+    argv
+}
+
+/// A remote filename for an upload: ASCII alphanumerics and `.-_`
+/// survive, everything else (spaces, quotes, non-ASCII) becomes `_`.
+/// The typed remote path must never need quoting at whatever prompt
+/// ends up receiving it — a shell, or a CLI reading its own input.
+#[must_use]
+pub fn remote_file_name(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_') {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    if cleaned.is_empty() {
+        "file".to_owned()
+    } else {
+        cleaned
+    }
+}
+
 /// `ssh <host> -- tmux <args…>` — a one-shot remote tmux command (no
 /// tty, unlike the attach).
 fn remote_tmux_argv(host: &str, args: &[&str]) -> Vec<String> {
@@ -271,6 +311,39 @@ mod tests {
         assert!(!killed(0)); // detach / user exit
         assert!(!killed(1 << 8)); // remote command failed
         assert!(!killed(127 << 8)); // tmux missing on host
+    }
+
+    #[test]
+    fn upload_argv_matches_spec() {
+        assert_eq!(
+            upload_argv(
+                "e@server",
+                std::path::Path::new("/run/user/1000/stashee/paste/paste-1a2b-1.png"),
+                "/tmp/stashee-1a2b-1-paste.png",
+            ),
+            [
+                "scp",
+                "-q",
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "ConnectTimeout=10",
+                "--",
+                "/run/user/1000/stashee/paste/paste-1a2b-1.png",
+                "e@server:/tmp/stashee-1a2b-1-paste.png",
+            ]
+        );
+    }
+
+    #[test]
+    fn remote_file_names_never_need_quoting() {
+        assert_eq!(
+            remote_file_name("Screenshot from 2026-07-21 12-00-00.png"),
+            "Screenshot_from_2026-07-21_12-00-00.png"
+        );
+        assert_eq!(remote_file_name("скрин.png"), "_____.png");
+        assert_eq!(remote_file_name("a'b\"c$d.txt"), "a_b_c_d.txt");
+        assert_eq!(remote_file_name(""), "file");
     }
 
     #[test]

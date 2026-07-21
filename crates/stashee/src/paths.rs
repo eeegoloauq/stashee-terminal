@@ -29,6 +29,13 @@ pub fn models_dir() -> PathBuf {
     glib::user_data_dir().join("stashee").join("models")
 }
 
+/// Where pasted clipboard images land before their path is typed into
+/// a pane (dnd.rs). Runtime dir: the session's tmpfs, so leftovers
+/// vanish at logout and never earlier.
+pub fn paste_dir() -> PathBuf {
+    glib::user_runtime_dir().join("stashee").join("paste")
+}
+
 /// Unix socket where the running app receives OSC 52 copies from the
 /// pane-side proxies (clipboard.rs serves it, proxy.rs connects).
 pub fn clipboard_socket() -> PathBuf {

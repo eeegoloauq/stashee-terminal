@@ -547,6 +547,8 @@ fn callbacks(ctx: &Rc<Ctx>) -> pane::Callbacks {
     let for_focus = ctx.clone();
     let for_dir = ctx.clone();
     let for_drop = ctx.clone();
+    let for_paste = ctx.clone();
+    let for_files = ctx.clone();
     pane::Callbacks {
         on_exited: Rc::new(move |id| remove_pane(&for_exit, id)),
         on_focus: Rc::new(move |id| {
@@ -560,6 +562,8 @@ fn callbacks(ctx: &Rc<Ctx>) -> pane::Callbacks {
         }),
         on_dir_changed: Rc::new(move |id, dir| set_last_dir(&for_dir, id, dir)),
         on_pane_drop: Rc::new(move |dragged, target| swap_panes(&for_drop, dragged, target)),
+        on_paste: Rc::new(move |id| crate::dnd::paste_into(&for_paste, id)),
+        on_file_drop: Rc::new(move |id, files| crate::dnd::files_dropped(&for_files, id, files)),
     }
 }
 
@@ -848,6 +852,47 @@ pub(crate) fn focused_pane(ctx: &Rc<Ctx>) -> Option<(gtk::Overlay, vte4::Termina
             let overlay = pane.root.clone().downcast::<gtk::Overlay>().ok()?;
             Some((overlay, pane.terminal.clone()))
         })
+}
+
+/// The focused pane's id, wherever `Ctrl+Shift+V` should land — same
+/// focused-or-first rule as [`focused_terminal`].
+pub(crate) fn focused_pane_id(ctx: &Rc<Ctx>) -> Option<String> {
+    let views = ctx.views.borrow();
+    let active = ctx.active.borrow();
+    views
+        .iter()
+        .find(|view| view.name.eq_ignore_ascii_case(&active))
+        .and_then(|view| {
+            view.focused
+                .clone()
+                .or_else(|| view.panes.first().map(|pane| pane.id.clone()))
+        })
+}
+
+/// A pane's terminal and, for SSH panes, its host — for typing file
+/// paths into it (dnd.rs). The host comes from state: the `Pane`
+/// widget deliberately keeps no connection details.
+pub(crate) fn pane_connection(ctx: &Rc<Ctx>, id: &str) -> Option<(vte4::Terminal, Option<String>)> {
+    let terminal = {
+        let views = ctx.views.borrow();
+        views
+            .iter()
+            .flat_map(|view| view.panes.iter())
+            .find(|pane| pane.id == id)
+            .map(|pane| pane.terminal.clone())
+    }?;
+    let host = ctx
+        .state
+        .borrow()
+        .workflows
+        .iter()
+        .flat_map(|workflow| workflow.panes.iter())
+        .find(|spec| spec.id == id)
+        .and_then(|spec| match &spec.kind {
+            PaneKind::Ssh { host, .. } => Some(host.clone()),
+            PaneKind::Local => None,
+        });
+    Some((terminal, host))
 }
 
 fn focus_active_pane(ctx: &Rc<Ctx>) {

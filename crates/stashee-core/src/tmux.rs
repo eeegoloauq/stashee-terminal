@@ -143,8 +143,10 @@ pub fn welcome_session_argv(
 /// Single-quote `text` for sh — tmux hands the session command to
 /// `sh -c`, and the executable path is not ours to trust. The SSH
 /// module reuses it to keep template arguments whole across the
-/// remote shell.
-pub(crate) fn shell_quote(text: &str) -> String {
+/// remote shell; the frontend's dnd module reuses it to type dropped
+/// paths that a shell prompt would otherwise split.
+#[must_use]
+pub fn shell_quote(text: &str) -> String {
     format!("'{}'", text.replace('\'', r"'\''"))
 }
 
