@@ -5,6 +5,11 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# The AUR push authenticates with its own SSH key; the GITHUB_TOKEN is
+# only used to check out the repo.
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
