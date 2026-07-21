@@ -178,11 +178,9 @@ pub(crate) fn install_shortcuts(ctx: &Rc<Ctx>, window: &adw::ApplicationWindow) 
         bindings.push(Binding {
             keyval,
             modifiers,
-            run: Box::new(move || {
-                if let Some(terminal) = focused_terminal(&ctx) {
-                    terminal.paste_clipboard();
-                }
-            }),
+            // Smart paste: text stays VTE's paste, an image-only
+            // clipboard becomes a file whose path is typed (dnd.rs).
+            run: Box::new(move || crate::dnd::paste(&ctx)),
         });
     }
     if let Some((keyval, modifiers)) = parse(&keys.voice, &defaults.voice, "voice", &mut warnings) {

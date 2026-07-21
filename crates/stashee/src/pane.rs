@@ -78,10 +78,16 @@ pub struct Callbacks {
     pub on_dir_changed: OnDirChanged,
     /// Alt+drag dropped one pane onto another: `(dragged, target)`.
     pub on_pane_drop: OnPaneDrop,
+    /// Right-click paste in this pane; the smart text-or-image
+    /// dispatch lives with the window (dnd.rs), not the widget.
+    pub on_paste: Rc<dyn Fn(&str)>,
+    /// Files dragged onto the pane from outside the app.
+    pub on_file_drop: OnFileDrop,
 }
 
 pub type OnDirChanged = Rc<dyn Fn(&str, PathBuf)>;
 pub type OnPaneDrop = Rc<dyn Fn(&str, &str)>;
+pub type OnFileDrop = Rc<dyn Fn(&str, Vec<PathBuf>)>;
 
 pub fn build(
     spec: &PaneSpec,
@@ -109,13 +115,17 @@ pub fn build(
     let paste = gtk::GestureClick::new();
     paste.set_button(gtk::gdk::BUTTON_SECONDARY);
     paste.set_propagation_phase(gtk::PropagationPhase::Capture);
-    paste.connect_pressed(|gesture, _, _, _| {
-        gesture.set_state(gtk::EventSequenceState::Claimed);
-        if let Some(terminal) = gesture.widget().and_downcast::<vte4::Terminal>() {
-            terminal.grab_focus();
-            terminal.paste_clipboard();
-        }
-    });
+    {
+        let id = spec.id.clone();
+        let on_paste = callbacks.on_paste.clone();
+        paste.connect_pressed(move |gesture, _, _, _| {
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+            if let Some(terminal) = gesture.widget().and_downcast::<vte4::Terminal>() {
+                terminal.grab_focus();
+            }
+            on_paste(&id);
+        });
+    }
     terminal.add_controller(paste);
 
     let session = Rc::new(RefCell::new(tmux::session_name(&workflow.name, &spec.id)));
@@ -365,6 +375,32 @@ pub fn build(
         });
     }
     root.add_controller(drop);
+
+    // Files from outside (a file manager, a screenshot notification)
+    // become paths at the pane's prompt — uploaded first when the pane
+    // is remote (dnd.rs). Distinct from the pane-move target above:
+    // file drags offer `GdkFileList`, pane drags the private boxed
+    // type, so GTK routes each drag to its own target.
+    let files_drop = gtk::DropTarget::new(
+        gtk::gdk::FileList::static_type(),
+        gtk::gdk::DragAction::COPY,
+    );
+    {
+        let id = spec.id.clone();
+        let on_file_drop = callbacks.on_file_drop.clone();
+        files_drop.connect_drop(
+            move |_, value, _, _| match value.get::<gtk::gdk::FileList>() {
+                Ok(list) => {
+                    let paths: Vec<PathBuf> =
+                        list.files().iter().filter_map(|file| file.path()).collect();
+                    on_file_drop(&id, paths);
+                    true
+                }
+                Err(_) => false,
+            },
+        );
+    }
+    root.add_controller(files_drop);
 
     Pane {
         id: spec.id.clone(),

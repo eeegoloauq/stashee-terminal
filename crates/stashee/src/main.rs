@@ -2,6 +2,7 @@
 
 mod cli;
 mod clipboard;
+mod dnd;
 mod grid;
 mod keys;
 mod pane;
