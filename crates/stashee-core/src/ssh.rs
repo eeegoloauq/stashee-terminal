@@ -35,8 +35,12 @@ fn with_opts(opts: &[&str], rest: &[&str]) -> Vec<String> {
 ///
 /// Besides attaching, the sequence turns `set-clipboard` on so that
 /// applications inside the remote tmux can copy via OSC 52 (the local
-/// proxy picks it up — see the frontend). `\;` survives the remote
-/// shell as tmux's command separator. Two constraints shape this:
+/// proxy picks it up — see the frontend), then enables mouse handling
+/// on this session only. The remote uses the user's default tmux socket,
+/// so `mouse` must not be changed globally; targeting our session keeps
+/// the rest of their tmux untouched while matching local-pane scroll and
+/// selection behavior. `\;` survives the remote shell as tmux's command
+/// separator. Two constraints shape this:
 /// a failed command aborts the whole sequence, so only options every
 /// tmux version knows may appear; and `set` alone cannot start a
 /// server, hence the explicit `start-server`.
@@ -81,6 +85,14 @@ pub fn attach_remote_argv(
     if let Some(run) = run {
         argv.push(crate::tmux::shell_quote(&crate::tmux::run_then_shell(run)));
     }
+    argv.extend([
+        "\\;".to_owned(),
+        "set-option".to_owned(),
+        "-t".to_owned(),
+        session.to_owned(),
+        "mouse".to_owned(),
+        "on".to_owned(),
+    ]);
     argv
 }
 
@@ -231,6 +243,12 @@ mod tests {
                 "-A",
                 "-s",
                 "stashee-srv-abc123",
+                "\\;",
+                "set-option",
+                "-t",
+                "stashee-srv-abc123",
+                "mouse",
+                "on",
             ]
         );
     }
@@ -246,7 +264,7 @@ mod tests {
         let tail: Vec<&str> = argv
             .iter()
             .rev()
-            .take(4)
+            .take(10)
             .rev()
             .map(String::as_str)
             .collect();
@@ -257,8 +275,30 @@ mod tests {
                 "-c",
                 "'/opt/my proj'",
                 "'claude; exec \"${SHELL:-/bin/sh}\"'",
+                "\\;",
+                "set-option",
+                "-t",
+                "stashee-myproj-abc123",
+                "mouse",
+                "on",
             ]
         );
+    }
+
+    #[test]
+    fn remote_mouse_setting_is_session_scoped() {
+        let argv = attach_remote_argv("dev", "stashee-work-abc123", None, None);
+        assert!(argv.windows(6).any(|args| {
+            args == [
+                "\\;",
+                "set-option",
+                "-t",
+                "stashee-work-abc123",
+                "mouse",
+                "on",
+            ]
+        }));
+        assert!(!argv.iter().any(|arg| arg == "-g"));
     }
 
     #[test]
