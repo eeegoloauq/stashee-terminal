@@ -13,6 +13,8 @@ pkgbase = stashee
 	depends = tmux
 	optdepends = wl-clipboard: mouse-selection copy on Wayland
 	optdepends = xclip: mouse-selection copy on X11
+	optdepends = pipewire: microphone capture for voice input
+	options = !lto
 	source = stashee-0.1.22.tar.gz::https://github.com/eeegoloauq/stashee-terminal/archive/v0.1.22.tar.gz
 	sha256sums = 70c5cc13c39fc273da9a734503c51972455570519e161dd06f2c688caf9bd9dc
 

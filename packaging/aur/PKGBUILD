@@ -16,6 +16,9 @@ makedepends=('cargo')
 optdepends=('wl-clipboard: mouse-selection copy on Wayland'
             'xclip: mouse-selection copy on X11'
             'pipewire: microphone capture for voice input')
+# makepkg's C/C++ LTO flags break ring's native assembly when a user
+# selects lld (the default on some Arch derivatives such as Omarchy).
+options=('!lto')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
 sha256sums=('70c5cc13c39fc273da9a734503c51972455570519e161dd06f2c688caf9bd9dc')
 
