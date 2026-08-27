@@ -14,13 +14,10 @@ concurrency:
 jobs:
   check:
     runs-on: docker
-    # The runner's image ships GTK 4.8 and the gtk4 crate needs >= 4.14;
-    # Fedora also packages the whole Rust toolchain, so nothing is downloaded
-    # through rustup.
-    container: fedora:latest
+    # Built from .forgejo/ci-image/Containerfile — the toolchain and the GTK
+    # headers used to be installed by dnf on every single run.
+    container: local/stashee-ci:latest
     steps:
-      - name: Install toolchain and build dependencies
-        run: dnf install -y nodejs git gcc gcc-c++ rust cargo rustfmt clippy gtk4-devel libadwaita-devel vte291-gtk4-devel
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
         with:

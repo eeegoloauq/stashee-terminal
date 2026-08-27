@@ -1,0 +1,20 @@
+# The image the pull-request check runs in. Everything here used to be
+# installed by dnf on every run, which cost minutes per pull request.
+#
+# It is built on the CI host and referenced by its local name, so nothing about
+# where it lives leaks into this repository. Rebuild it when the build
+# dependencies change:
+#
+#   docker build -t local/stashee-ci:latest -f .forgejo/ci-image/Containerfile .
+#
+# Fedora, for the same reason as the release build: the runner's own image
+# ships GTK 4.8 while the gtk4 crate needs >= 4.14, and Fedora packages the
+# whole Rust toolchain, so nothing comes through rustup.
+FROM fedora:latest
+
+# fedora-cisco-openh264 is a mirror-of-one and is down often enough to fail a
+# build that has nothing to do with it.
+RUN dnf install -y --setopt=install_weak_deps=False --disablerepo=fedora-cisco-openh264 \
+      nodejs git gcc gcc-c++ rust cargo rustfmt clippy \
+      gtk4-devel libadwaita-devel vte291-gtk4-devel \
+ && dnf clean all
