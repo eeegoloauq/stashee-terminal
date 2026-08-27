@@ -16,18 +16,18 @@ jobs:
     runs-on: docker
     # Built from .forgejo/ci-image/Containerfile — the toolchain and the GTK
     # headers used to be installed by dnf on every single run.
-    container: local/stashee-ci:latest
+    container:
+      image: local/stashee-ci:latest
+      # A named volume rather than actions/cache: on one self-hosted runner the
+      # registry and the build directory can simply stay on disk between runs,
+      # with no archive to pack, upload and unpack every time.
+      volumes:
+        - ci-cargo:/cargo
+    env:
+      CARGO_HOME: /cargo/home
+      CARGO_TARGET_DIR: /cargo/target
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
