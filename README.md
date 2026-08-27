@@ -10,8 +10,8 @@
 
 Terminals are grouped into named **workflows** and tile automatically.
 Every pane runs inside a tmux session, so closing the app **stashes** a
-workflow instead of killing it. Reopen, and every shell is back exactly
-where it was.
+workflow instead of killing it; reopening brings the shells back where
+they were.
 
 <img src="docs/shots/first-run.png" alt="stashee on first launch" width="85%">
 
@@ -19,8 +19,8 @@ where it was.
 
 ## Why
 
-- Sessions live in tmux, not in the app. Quitting, crashing, or
-  updating loses nothing; the window is only a client.
+- Sessions live in tmux, not in the app: quitting, crashing or
+  updating loses nothing.
 - No layout management. New panes tile automatically: up to three
   columns, then rows, always evenly split.
 - SSH panes are stashed too. A pane on a remote host survives reboots
@@ -35,7 +35,7 @@ where it was.
 <p align="center">
   <img src="docs/shots/agents.png" alt="two coding agents in a stashed workflow" width="90%">
   <br>
-  <sub>A coding agent per project in one stashed workflow. Closing the window kills neither.</sub>
+  <sub>A coding agent per project in one stashed workflow. Closing the window leaves both running.</sub>
 </p>
 
 ## Usage
@@ -46,12 +46,12 @@ where it was.
 | `Ctrl+T` | new pane |
 | `Ctrl+Shift+T` | new SSH pane |
 | `Alt+1…9` | switch workflow |
-| `Ctrl+W` | close pane (the only way a pane dies on purpose) |
+| `Ctrl+W` | close pane (the only way to end one) |
 | `Ctrl+Shift+V` | paste; a clipboard image becomes a file path, uploaded first on SSH panes |
 | `stashee config` | open the config file; changes apply live ([all options](docs/config.toml.example)) |
 
-There is no settings GUI, no plugin system, no theme gallery. The scope
-is deliberately small.
+There is no settings GUI and no plugin system; the scope is deliberately
+small.
 
 ## Voice input (experimental)
 
@@ -111,9 +111,8 @@ and VTE ship with it.
 ## Contributing
 
 Issues and PRs are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the build deps and
-guidelines. `just check` runs the full gate (fmt, clippy, tests) that CI expects. The scope is
-deliberately small, so for anything bigger than a fix, open an issue first so we can talk it
-over before you spend time on it.
+guidelines. `just check` runs the full gate (fmt, clippy, tests) that CI expects. For anything
+bigger than a fix, open an issue first.
 
 ## License
 
