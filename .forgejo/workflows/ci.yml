@@ -1,0 +1,33 @@
+# Runs in Forgejo, where the pull requests are: a repository with
+# .forgejo/workflows/ makes Forgejo ignore .github/workflows entirely, so the
+# copy on GitHub cannot cover these. Same gate as .github/workflows/ci.yml.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: docker
+    # The runner's image ships GTK 4.8 and the gtk4 crate needs >= 4.14;
+    # Fedora also packages the whole Rust toolchain, so nothing is downloaded
+    # through rustup.
+    container: fedora:latest
+    steps:
+      - name: Install toolchain and build dependencies
+        run: dnf install -y nodejs git gcc gcc-c++ rust cargo rustfmt clippy gtk4-devel libadwaita-devel vte291-gtk4-devel
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
