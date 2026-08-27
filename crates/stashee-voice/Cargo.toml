@@ -12,7 +12,7 @@ stashee-pty = { path = "../stashee-pty" }
 # Pinned exact: 2.0 release candidates change API between rcs. Slim
 # feature set — no ndarray (we index tensors by hand), rustls instead
 # of native-tls so builds need no OpenSSL headers.
-ort = { version = "=2.0.0-rc.12", optional = true, default-features = false, features = [
+ort = { version = "=2.0.0-rc.13", optional = true, default-features = false, features = [
     "std",
     "download-binaries",
     "tls-rustls",
