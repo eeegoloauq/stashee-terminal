@@ -49,18 +49,3 @@ libadwaita-1-dev libvte-2.91-gtk4-dev` (end users need nothing — GTK/VTE ship 
 
 Tabs inside panes · plugins · settings GUI · theme gallery ·
 non-Linux · own scrollback (tmux's is fine; control-mode scrollback is v1.x — roadmap in docs/SPEC.md).
-
-## Releases
-
-A release is a tag. Pushing `vX.Y.Z` runs `.github/workflows/release.yml`, and the
-release body is exactly the annotated tag's message — nothing is appended, no
-commit list is generated. Whatever is not in the tag message is not in the release,
-and a lightweight tag or `-m ""` ships an empty one.
-
-Write it for someone who runs this, not for someone reading the diff: what changed
-in behaviour, and what they have to do on upgrade.
-
-Because there is no generated list, the tag message is the entire record, and
-nothing spans versions on its own. A major does not roll its minors up: if `v2.0.0`
-should read as a summary of the whole line rather than of the last step, that
-summary has to be written into the tag message by hand.
