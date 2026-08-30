@@ -11,6 +11,11 @@ members = [
 version = "0.2.0"
 edition = "2024"
 license = "MIT"
+# The oldest Rust in a distro we build packages for (Fedora 43 and 45 are
+# on 1.97; 44 has moved to 1.98). Keeps cargo's resolver off crates that
+# need a newer compiler than those builders have, and turns "too old to
+# build" into one clear line instead of an error deep in a build.
+rust-version = "1.97"
 
 [workspace.dependencies]
 anyhow = "1"
