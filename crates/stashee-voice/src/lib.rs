@@ -279,8 +279,10 @@ fn read_full(reader: &mut impl Read, buf: &mut [u8]) -> usize {
 /// Little-endian s16 frames; a trailing odd byte is dropped.
 fn samples_from_le_bytes(bytes: &[u8]) -> Vec<i16> {
     bytes
-        .chunks_exact(2)
-        .map(|pair| i16::from_le_bytes([pair[0], pair[1]]))
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|&pair| i16::from_le_bytes(pair))
         .collect()
 }
 
