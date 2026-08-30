@@ -4,6 +4,7 @@ description = "Glass-styled tiling terminal workspace over tmux — GTK4 Linux f
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 stashee-core = { path = "../stashee-core" }
