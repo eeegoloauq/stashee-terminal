@@ -39,8 +39,10 @@ fn main() -> anyhow::Result<()> {
 
     let bytes = std::fs::read(&audio)?;
     let samples: Vec<f32> = bytes
-        .chunks_exact(2)
-        .map(|pair| f32::from(i16::from_le_bytes([pair[0], pair[1]])) / f32::from(i16::MAX))
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|&pair| f32::from(i16::from_le_bytes(pair)) / f32::from(i16::MAX))
         .collect();
     eprintln!("audio: {:.1}s", samples.len() as f32 / 16_000.0);
 
