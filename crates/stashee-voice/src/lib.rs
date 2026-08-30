@@ -6,7 +6,7 @@
 //! the samples when recording ends.
 
 use std::io::Read;
-use std::process::{Child, ChildStdout, Command, Stdio};
+use std::process::{Child, ChildStderr, ChildStdout, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
@@ -30,6 +30,9 @@ const CHUNK_SAMPLES: usize = 480;
 /// Buffer cap (10 min of audio, ~18 MB). The frontend auto-stops long
 /// before this; the cap only guards against a runaway session.
 const MAX_SAMPLES: usize = SAMPLE_RATE as usize * 600;
+
+/// How much of `pw-record`'s stderr to keep for the failure toast.
+const STDERR_CAP: usize = 4096;
 
 /// A speech-to-text engine (SPEC.md roadmap v2: Parakeet now, GigaAM
 /// and a cloud option later, all behind this one seam).
@@ -72,15 +75,31 @@ pub struct Recorder {
     child: Child,
     shared: Arc<Shared>,
     reader: Option<JoinHandle<()>>,
+    /// What the child complained about, so a failure can say why.
+    stderr: Arc<Mutex<String>>,
+    stderr_reader: Option<JoinHandle<()>>,
 }
 
 impl Recorder {
     pub fn start() -> Result<Self> {
         let mut child = Command::new("pw-record")
-            .args(["--rate", "16000", "--channels", "1", "--format", "s16", "-"])
+            // `--raw` is what makes `-` mean stdout and the bytes mean
+            // exactly what --format says. Without it pw-record hands the
+            // stream to libsndfile, which writes a big-endian .au file
+            // named `-` in the working directory and leaves this pipe empty.
+            .args([
+                "--raw",
+                "--rate",
+                "16000",
+                "--channels",
+                "1",
+                "--format",
+                "s16",
+                "-",
+            ])
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(Stdio::piped())
             .spawn()
             .context("running pw-record (PipeWire's recorder — pipewire-utils on Fedora)")?;
         let Some(stdout) = child.stdout.take() else {
@@ -96,10 +115,17 @@ impl Recorder {
             let shared = shared.clone();
             std::thread::spawn(move || read_loop(stdout, &shared))
         };
+        let stderr = Arc::new(Mutex::new(String::new()));
+        let stderr_reader = child.stderr.take().map(|pipe| {
+            let sink = stderr.clone();
+            std::thread::spawn(move || stderr_loop(pipe, &sink))
+        });
         Ok(Self {
             child,
             shared,
             reader: Some(reader),
+            stderr,
+            stderr_reader,
         })
     }
 
@@ -113,14 +139,26 @@ impl Recorder {
             .unwrap_or_default()
     }
 
-    /// A capture that died under us — PipeWire missing or stopped.
-    /// `None` while recording runs.
+    /// A capture that died under us — no microphone, PipeWire stopped,
+    /// an argument this build rejects. `None` while recording runs.
     pub fn failed(&mut self) -> Option<String> {
         match self.child.try_wait() {
             Ok(None) => None,
-            Ok(Some(status)) => Some(format!("pw-record exited early ({status})")),
+            // pw-record's own last word beats a bare exit status: it is
+            // the only thing that says *which* of those it was.
+            Ok(Some(status)) => Some(match self.complaint() {
+                Some(reason) => describe(&reason),
+                None => format!("pw-record exited early ({status})"),
+            }),
             Err(err) => Some(format!("pw-record is gone: {err}")),
         }
+    }
+
+    /// The last thing the child wrote to stderr, if anything.
+    fn complaint(&self) -> Option<String> {
+        let text = self.stderr.lock().ok()?;
+        let line = text.lines().map(str::trim).rfind(|line| !line.is_empty())?;
+        Some(line.to_owned())
     }
 
     /// Stop capturing and keep the audio.
@@ -142,6 +180,11 @@ impl Recorder {
             && reader.join().is_err()
         {
             tracing::warn!("voice capture reader thread panicked");
+        }
+        if let Some(reader) = self.stderr_reader.take()
+            && reader.join().is_err()
+        {
+            tracing::warn!("voice capture stderr thread panicked");
         }
     }
 }
@@ -172,6 +215,50 @@ fn read_loop(mut stdout: ChildStdout, shared: &Shared) {
             return; // EOF mid-chunk: the child was killed
         }
     }
+}
+
+/// pw-record's last stderr line, turned into something a toast can say.
+/// A muted or absent input reaches us as a stream-node error — by far
+/// the most common failure, and the one whose wording says nothing to
+/// the person holding the microphone. Everything else passes through as
+/// it came, because guessing at it would say less than pw-record does.
+fn describe(complaint: &str) -> String {
+    if complaint.contains("no node available") {
+        return "no microphone — check the input device in Sound settings".to_owned();
+    }
+    complaint.to_owned()
+}
+
+/// Collect the child's stderr so a failure can quote it. Bounded: only
+/// the tail matters, and the tail is what a toast shows.
+fn stderr_loop(mut stderr: ChildStderr, sink: &Mutex<String>) {
+    let mut buf = [0u8; 512];
+    loop {
+        match stderr.read(&mut buf) {
+            Ok(0) => return,
+            Ok(n) => {
+                if let Ok(mut text) = sink.lock() {
+                    push_bounded(&mut text, &String::from_utf8_lossy(&buf[..n]));
+                }
+            }
+            Err(err) if err.kind() == std::io::ErrorKind::Interrupted => {}
+            Err(_) => return,
+        }
+    }
+}
+
+/// Append `chunk`, dropping leading text so `text` stays under
+/// [`STDERR_CAP`] bytes and still starts on a character.
+fn push_bounded(text: &mut String, chunk: &str) {
+    text.push_str(chunk);
+    if text.len() <= STDERR_CAP {
+        return;
+    }
+    let want = text.len() - STDERR_CAP;
+    let start = (want..text.len())
+        .find(|&i| text.is_char_boundary(i))
+        .unwrap_or(text.len());
+    text.drain(..start);
 }
 
 /// Fill `buf` from `reader` as far as possible; short only at EOF (or
@@ -257,5 +344,41 @@ mod tests {
             samples: vec![0; SAMPLE_RATE as usize * 3 / 2],
         };
         assert!((recording.duration_secs() - 1.5).abs() < 1e-6);
+    }
+
+    #[test]
+    fn a_missing_input_reads_as_a_missing_microphone() {
+        assert_eq!(
+            describe("stream node 74 error: no node available"),
+            "no microphone — check the input device in Sound settings"
+        );
+    }
+
+    #[test]
+    fn an_unrecognized_complaint_is_passed_through() {
+        assert_eq!(
+            describe("remote error: id=0 seq:1 res:-32 (Broken pipe): connection error"),
+            "remote error: id=0 seq:1 res:-32 (Broken pipe): connection error"
+        );
+    }
+
+    #[test]
+    fn stderr_buffer_keeps_the_tail_and_stays_bounded() {
+        let mut text = String::new();
+        for _ in 0..100 {
+            push_bounded(&mut text, &"x".repeat(100));
+        }
+        push_bounded(&mut text, "sndfile: failed to open");
+        assert!(text.len() <= STDERR_CAP);
+        assert!(text.ends_with("sndfile: failed to open"));
+    }
+
+    #[test]
+    fn stderr_buffer_trims_on_a_character_boundary() {
+        let mut text = "ы".repeat(STDERR_CAP);
+        push_bounded(&mut text, "ok");
+        assert!(text.len() <= STDERR_CAP);
+        assert!(text.ends_with("ok"));
+        assert!(text.starts_with('ы'));
     }
 }
