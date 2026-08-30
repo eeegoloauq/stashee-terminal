@@ -962,7 +962,7 @@ dependencies = [
 
 [[package]]
 name = "stashee"
-version = "0.1.23"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "gtk4",
@@ -977,7 +977,7 @@ dependencies = [
 
 [[package]]
 name = "stashee-core"
-version = "0.1.23"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "fastrand",
@@ -989,14 +989,14 @@ dependencies = [
 
 [[package]]
 name = "stashee-pty"
-version = "0.1.23"
+version = "0.2.0"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "stashee-voice"
-version = "0.1.23"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "ort",
