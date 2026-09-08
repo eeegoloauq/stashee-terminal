@@ -24,8 +24,6 @@ BuildRequires:  desktop-file-utils
 BuildRequires:  libappstream-glib
 
 Requires:       tmux
-Recommends:     wl-clipboard
-Recommends:     xclip
 # pw-record: microphone capture for voice input
 Recommends:     pipewire-utils
 

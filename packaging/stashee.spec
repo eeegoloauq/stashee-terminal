@@ -12,8 +12,6 @@ License:        MIT
 URL:            https://github.com/eeegoloauq/stashee-terminal
 
 Requires:       tmux
-Recommends:     wl-clipboard
-Recommends:     xclip
 # pw-record: microphone capture for voice input
 Recommends:     pipewire-utils
 
