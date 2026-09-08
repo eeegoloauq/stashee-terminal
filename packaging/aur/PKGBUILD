@@ -13,9 +13,7 @@ url="https://github.com/eeegoloauq/stashee-terminal"
 license=('MIT')
 depends=('gtk4' 'libadwaita' 'vte4' 'tmux')
 makedepends=('cargo')
-optdepends=('wl-clipboard: mouse-selection copy on Wayland'
-            'xclip: mouse-selection copy on X11'
-            'pipewire: microphone capture for voice input')
+optdepends=('pipewire: microphone capture for voice input')
 # makepkg's C/C++ LTO flags break ring's native assembly when a user
 # selects lld (the default on some Arch derivatives such as Omarchy).
 options=('!lto')
