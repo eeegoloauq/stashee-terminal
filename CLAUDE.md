@@ -1,51 +1,50 @@
 # stashee-terminal
 
-Glass-styled tiling terminal workspace for Linux. Terminals group into named
-*workflows*; every pane is a tmux session on a dedicated socket, so closing the
-app *stashes* a workflow — reopen, and every shell is back.
+Stashee is a native Linux terminal for people who keep related shells in named,
+tiled workflows. tmux owns persistent sessions: closing the app leaves stashed
+shells running, and reopening restores them. See [product behavior](docs/SPEC.md)
+and [architecture](docs/ARCHITECTURE.md) where those local docs are available.
 
-Product behavior: docs/SPEC.md. Code structure: docs/ARCHITECTURE.md.
-Read the relevant one before changing what it covers; update it in the same change.
+## Decisions and gotchas
 
-## Locked decisions — don't relitigate
-
-- Rust + GTK4 + libadwaita + VTE (`vte4`). No Electron/Tauri/webviews, no own
-  terminal emulation. Cross-platform later = new native frontends over the same core crate.
-- tmux owns persistence; the app is a thin client. Stashing is per-workflow,
-  on by default; `stash = false` opts out to plain shells. No third mode.
-- Binary `stashee`, `st` = optional install-time symlink. Voice-to-text is v2.
-  v1 targets Fedora + GNOME/Wayland only.
-
-## Invariants
-
-- Killing the app never kills a shell in a stashed workflow (app owns clients, tmux owns sessions).
-- `stashee-core` never depends on GTK or any UI toolkit.
-- Source of truth for local panes is `tmux -L stashee ls`, reconciled with the
-  state file at startup (state adds only ordering and SSH targets).
-- Layout math is a pure function in `crates/stashee-core/src/layout.rs` — no GTK types, unit-tested.
-- One process instance; a second invocation forwards its args over D-Bus (GApplication default).
+- Use Rust, GTK4, libadwaita and VTE; `stashee-core` stays independent of UI
+  toolkits. Do not add Electron, Tauri, webviews or terminal emulation.
+- Stashing is enabled per workflow by default; `stash = false` uses plain
+  shells. Live tmux sessions are the source of truth for local stashed panes;
+  saved state supplies ordering and SSH targets.
+- Fedora and GNOME/Wayland are the primary desktop target. Voice input is
+  already present as an experimental, opt-in feature.
+- `stashee` is the binary; `st` is an optional install-time symlink and may
+  conflict with another terminal. tmux is required at runtime.
+- `docs/SPEC.md` and `docs/ARCHITECTURE.md` are local symlinks outside the
+  tracked tree; do not assume they are present in every clone.
 
 ## Commands
 
+```sh
+cargo run -p stashee
+cargo build --workspace
+just check                      # fmt check, Clippy, tests
+just install                    # release build and user-level install
 ```
-cargo build / run / test
-cargo clippy -- -D warnings
-cargo fmt
-just install                 # release build + user-level install
-```
 
-All four (build, test, clippy, fmt) must pass before a change is done.
-Build headers, Debian/Ubuntu dev box: `apt install pkg-config libgtk-4-dev
-libadwaita-1-dev libvte-2.91-gtk4-dev` (end users need nothing — GTK/VTE ship with Fedora).
+All four must pass before a change is done. No `unwrap()`/`expect()` outside
+tests; errors surface as a toast or a `tracing` log, never dropped. Feature bar:
+if the app would feel complete without it, don't build it.
 
-## Conventions
+Equivalent checks: `cargo fmt --all --check`,
+`cargo clippy --workspace --all-targets -- -D warnings`, and
+`cargo test --workspace`.
 
-- No `unwrap()`/`expect()` outside tests. Errors surface as a toast or `tracing` log, never dropped.
-- New dependency = row with one-line justification in the dep table in docs/ARCHITECTURE.md.
-- Everything in the repo is English — code, docs, commits (owner chat is usually Russian).
-- Feature bar: would the app still feel complete without it? If yes, don't build it.
+## Release and rollback
 
-## Not in v1
+`just release VERSION NOTES.md` runs checks, updates versions, commits and
+creates an annotated `v*` tag; pushing the commit and tag is a separate step.
+The tag triggers GitHub package/release builds and AUR publication, followed
+by Forgejo republication. There is no automated rollback or post-release
+health check. For a bad release, stop distributing its artifacts, restore the
+last known good package for users, then publish a corrected version and verify
+the installed app starts and reconnects to stashed shells. Do not reuse a
+published tag.
 
-Tabs inside panes · plugins · settings GUI · theme gallery ·
-non-Linux · own scrollback (tmux's is fine; control-mode scrollback is v1.x — roadmap in docs/SPEC.md).
+Planned larger work: `ROADMAP.md`.
