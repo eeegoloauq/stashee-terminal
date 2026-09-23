@@ -105,8 +105,8 @@ git clone https://github.com/eeegoloauq/stashee-terminal && cd stashee-terminal
 just install        # release build → ~/.local/bin/stashee (+ st symlink)
 ```
 
-At runtime Fedora Workstation needs nothing extra: GTK4, libadwaita,
-and VTE ship with it.
+At runtime Fedora Workstation includes GTK4, libadwaita, and VTE;
+tmux must also be installed.
 
 ## Contributing
 
