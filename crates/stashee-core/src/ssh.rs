@@ -148,6 +148,40 @@ pub fn killed(wait_status: i32) -> bool {
     wait_status & 0x7f != 0 || (wait_status >> 8) & 0xff >= 128
 }
 
+/// What an SSH pane does when its ssh client exits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExitAction {
+    /// The host has no tmux: reconnect once as plain `ssh`.
+    FallBackToPlain,
+    /// The transport died or the client was killed: keep the pane and
+    /// reattach after [`reconnect_delay`].
+    Reconnect,
+    /// A clean exit (detach, `exit`, the close key's remote kill).
+    Close,
+}
+
+/// Decide from the client's raw wait status. On a plain connection a
+/// 127 is just the remote shell's last command failing, not missing
+/// tmux, so it closes like any other clean exit.
+#[must_use]
+pub fn exit_action(wait_status: i32, on_plain_fallback: bool) -> ExitAction {
+    if remote_tmux_missing(wait_status) && !on_plain_fallback {
+        ExitAction::FallBackToPlain
+    } else if connection_lost(wait_status) || killed(wait_status) {
+        ExitAction::Reconnect
+    } else {
+        ExitAction::Close
+    }
+}
+
+/// Delay before reconnect attempt `attempt` (0 for the first): 1 s,
+/// doubling to a 16 s cap, retried until it succeeds or the pane is
+/// closed.
+#[must_use]
+pub fn reconnect_delay(attempt: u32) -> std::time::Duration {
+    std::time::Duration::from_secs(1 << attempt.min(4))
+}
+
 /// argv to copy a local file onto `host`, for a file drop / image
 /// paste into one of its panes (the frontend's dnd module). Same
 /// fail-fast stance as [`ONESHOT_OPTS`]: scp runs headless, so
@@ -224,6 +258,27 @@ pub fn remote_current_command_argv(host: &str, session: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn exit_status_decides_fallback_reconnect_or_close() {
+        let exited = |code: i32| code << 8;
+        let sigterm = 15;
+        assert_eq!(exit_action(exited(127), false), ExitAction::FallBackToPlain);
+        assert_eq!(exit_action(exited(127), true), ExitAction::Close);
+        assert_eq!(exit_action(exited(255), false), ExitAction::Reconnect);
+        assert_eq!(exit_action(exited(255), true), ExitAction::Reconnect);
+        assert_eq!(exit_action(sigterm, false), ExitAction::Reconnect);
+        assert_eq!(exit_action(exited(128 + 15), true), ExitAction::Reconnect);
+        assert_eq!(exit_action(exited(0), false), ExitAction::Close);
+        assert_eq!(exit_action(exited(1), false), ExitAction::Close);
+    }
+
+    #[test]
+    fn reconnect_backs_off_from_one_second_to_sixteen() {
+        let secs: Vec<u64> = (0..7).map(|n| reconnect_delay(n).as_secs()).collect();
+        assert_eq!(secs, [1, 2, 4, 8, 16, 16, 16]);
+        assert_eq!(reconnect_delay(u32::MAX).as_secs(), 16);
+    }
 
     #[test]
     fn remote_current_command_quotes_the_format_for_the_remote_shell() {

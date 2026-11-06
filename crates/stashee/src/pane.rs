@@ -164,85 +164,92 @@ pub fn build(
             terminal.connect_child_exited(move |terminal, status| {
                 exits.set(exits.get() + 1);
                 child_pid.set(None);
-                if ssh::remote_tmux_missing(status) && !fallback.get() {
-                    fallback.set(true);
-                    banner.set_title(NO_TMUX_BANNER);
-                    banner.set_revealed(true);
-                    spawn(
-                        terminal,
-                        proxy::wrap(ssh::plain_argv(&host)),
-                        &working_dir,
-                        &id,
-                        &on_exited,
-                        &child_pid,
-                    );
-                } else if ssh::connection_lost(status) || ssh::killed(status) {
-                    // A dead transport or a killed child (logout,
-                    // shutdown) is not a user exit: the pane must
-                    // survive in state, so reattach after a backoff
-                    // instead of dropping it (SPEC.md "SSH panes").
-                    reconnecting.set(true);
-                    banner.set_title(RECONNECT_BANNER);
-                    banner.set_revealed(true);
-                    let attempt = attempts.get();
-                    attempts.set(attempt.saturating_add(1));
-                    let argv = if fallback.get() {
-                        ssh::plain_argv(&host)
-                    } else {
-                        // cwd/run ride along: they only apply if the
-                        // remote session has to be recreated (remote
-                        // reboot) — a plain reattach ignores them. The
-                        // session name is read live: a workflow rename
-                        // or cross-workflow move may have changed it.
-                        ssh::attach_remote_argv(
-                            &host,
-                            &session.borrow(),
-                            cwd.as_deref(),
-                            run.as_deref(),
-                        )
-                    };
-                    let delay = Duration::from_secs(1 << attempt.min(4));
-                    let terminal = terminal.downgrade();
-                    let banner = banner.downgrade();
-                    let fallback = fallback.clone();
-                    let reconnecting = reconnecting.clone();
-                    let child_pid = child_pid.clone();
-                    let attempts = attempts.clone();
-                    let exits = exits.clone();
-                    let working_dir = working_dir.clone();
-                    let id = id.clone();
-                    let on_exited = on_exited.clone();
-                    gtk::glib::timeout_add_local_once(delay, move || {
-                        // The pane may have been closed while waiting.
-                        let Some(terminal) = terminal.upgrade() else {
-                            return;
-                        };
+                match ssh::exit_action(status, fallback.get()) {
+                    ssh::ExitAction::FallBackToPlain => {
+                        fallback.set(true);
+                        banner.set_title(NO_TMUX_BANNER);
+                        banner.set_revealed(true);
                         spawn(
-                            &terminal,
-                            proxy::wrap(argv),
+                            terminal,
+                            proxy::wrap(ssh::plain_argv(&host)),
                             &working_dir,
                             &id,
                             &on_exited,
                             &child_pid,
                         );
-                        let seen = exits.get();
-                        gtk::glib::timeout_add_local_once(RECONNECT_SETTLED, move || {
-                            if exits.get() != seen {
-                                return; // died again; the next attempt owns the banner
-                            }
-                            attempts.set(0);
-                            reconnecting.set(false);
-                            if let Some(banner) = banner.upgrade() {
-                                if fallback.get() {
-                                    banner.set_title(NO_TMUX_BANNER);
-                                } else {
-                                    banner.set_revealed(false);
+                    }
+                    ssh::ExitAction::Reconnect => {
+                        // A dead transport or a killed child (logout,
+                        // shutdown) is not a user exit: the pane must
+                        // survive in state, so reattach after a backoff
+                        // instead of dropping it (SPEC.md "SSH panes").
+                        reconnecting.set(true);
+                        banner.set_title(RECONNECT_BANNER);
+                        banner.set_revealed(true);
+                        let attempt = attempts.get();
+                        attempts.set(attempt.saturating_add(1));
+                        let delay = ssh::reconnect_delay(attempt);
+                        let host = host.clone();
+                        let cwd = cwd.clone();
+                        let run = run.clone();
+                        let session = session.clone();
+                        let terminal = terminal.downgrade();
+                        let banner = banner.downgrade();
+                        let fallback = fallback.clone();
+                        let reconnecting = reconnecting.clone();
+                        let child_pid = child_pid.clone();
+                        let attempts = attempts.clone();
+                        let exits = exits.clone();
+                        let working_dir = working_dir.clone();
+                        let id = id.clone();
+                        let on_exited = on_exited.clone();
+                        gtk::glib::timeout_add_local_once(delay, move || {
+                            // The pane may have been closed while waiting.
+                            let Some(terminal) = terminal.upgrade() else {
+                                return;
+                            };
+                            // Built when the retry fires, not when the link
+                            // dropped: a workflow rename or pane move during
+                            // the backoff changes the session name, and a
+                            // stale one would recreate the old session on the
+                            // host. cwd/run only apply if the remote session
+                            // has to be recreated (remote reboot).
+                            let argv = if fallback.get() {
+                                ssh::plain_argv(&host)
+                            } else {
+                                ssh::attach_remote_argv(
+                                    &host,
+                                    &session.borrow(),
+                                    cwd.as_deref(),
+                                    run.as_deref(),
+                                )
+                            };
+                            spawn(
+                                &terminal,
+                                proxy::wrap(argv),
+                                &working_dir,
+                                &id,
+                                &on_exited,
+                                &child_pid,
+                            );
+                            let seen = exits.get();
+                            gtk::glib::timeout_add_local_once(RECONNECT_SETTLED, move || {
+                                if exits.get() != seen {
+                                    return; // died again; the next attempt owns the banner
                                 }
-                            }
+                                attempts.set(0);
+                                reconnecting.set(false);
+                                if let Some(banner) = banner.upgrade() {
+                                    if fallback.get() {
+                                        banner.set_title(NO_TMUX_BANNER);
+                                    } else {
+                                        banner.set_revealed(false);
+                                    }
+                                }
+                            });
                         });
-                    });
-                } else {
-                    on_exited(&id);
+                    }
+                    ssh::ExitAction::Close => on_exited(&id),
                 }
             });
         }
