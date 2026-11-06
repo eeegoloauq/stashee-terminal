@@ -56,6 +56,29 @@ pub fn peer_uid(socket: &impl AsFd) -> io::Result<u32> {
     Ok(cred.uid)
 }
 
+/// Send `SIGTERM` to the process group `pgid`, through killpg(2) and
+/// never a `kill` command: procps-ng 4.0.4 parses `kill -TERM -<pgid>`
+/// as a signal to every process the caller may signal, which for root
+/// is the whole system. Group ids 0 (the caller's own group) and 1 are
+/// refused for the same reason.
+pub fn terminate_group(pgid: u32) -> io::Result<()> {
+    let pgid = libc::pid_t::try_from(pgid).map_err(|_| {
+        io::Error::new(io::ErrorKind::InvalidInput, "process group id out of range")
+    })?;
+    if pgid <= 1 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "refusing to signal process group 0 or 1",
+        ));
+    }
+    // SAFETY: killpg(2) with a group id above 1 and a valid signal; no
+    // memory is involved.
+    if unsafe { libc::killpg(pgid, libc::SIGTERM) } != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}
+
 /// This process's real uid.
 #[must_use]
 pub fn current_uid() -> u32 {
@@ -238,6 +261,24 @@ mod tests {
 
     use super::*;
     use std::io::Read;
+
+    #[test]
+    fn terminate_group_refuses_the_caller_and_init_groups() {
+        assert!(terminate_group(0).is_err());
+        assert!(terminate_group(1).is_err());
+    }
+
+    #[test]
+    fn terminate_group_reaches_only_that_group() {
+        use std::os::unix::process::{CommandExt, ExitStatusExt};
+        let mut child = Command::new("sleep")
+            .arg("30")
+            .process_group(0)
+            .spawn()
+            .unwrap();
+        terminate_group(child.id()).unwrap();
+        assert_eq!(child.wait().unwrap().signal(), Some(libc::SIGTERM));
+    }
 
     #[test]
     fn a_socket_pair_peer_is_this_user() {

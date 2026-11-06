@@ -17,4 +17,6 @@ FROM fedora:latest
 RUN dnf install -y --setopt=install_weak_deps=False --disablerepo=fedora-cisco-openh264 \
       nodejs git gcc gcc-c++ rust cargo rustfmt clippy \
       gtk4-devel libadwaita-devel vte291-gtk4-devel tmux \
+      desktop-file-utils appstream \
+      /usr/bin/xvfb-run /usr/bin/xauth /usr/bin/dbus-run-session \
  && dnf clean all

@@ -19,7 +19,7 @@ jobs:
       # checkout is a JS action: the container must already have node,
       # and git makes checkout clone instead of the flaky REST download.
       - name: Install toolchain and build dependencies
-        run: dnf install -y nodejs git gcc gcc-c++ rust cargo rustfmt clippy gtk4-devel libadwaita-devel vte291-gtk4-devel tmux
+        run: dnf install -y nodejs git gcc gcc-c++ rust cargo rustfmt clippy gtk4-devel libadwaita-devel vte291-gtk4-devel tmux desktop-file-utils appstream /usr/bin/xvfb-run /usr/bin/xauth /usr/bin/dbus-run-session
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
         with:
@@ -32,4 +32,11 @@ jobs:
             ${{ runner.os }}-cargo-
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
+      # STASHEE_E2E=require: the end-to-end stash test must run here, not skip.
       - run: cargo test --workspace
+        env:
+          STASHEE_E2E: require
+      - name: Validate the desktop entry and AppStream metadata
+        run: |
+          desktop-file-validate crates/stashee/data/dev.stashee.Terminal.desktop
+          appstreamcli validate --no-net crates/stashee/data/dev.stashee.Terminal.metainfo.xml
