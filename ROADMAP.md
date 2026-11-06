@@ -1,6 +1,6 @@
 # Roadmap
 
-Plans, not promises. Open an issue to ask for something.
+Open an issue to ask for something.
 
 ## Next
 
