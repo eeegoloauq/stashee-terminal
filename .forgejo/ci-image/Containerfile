@@ -16,5 +16,5 @@ FROM fedora:latest
 # build that has nothing to do with it.
 RUN dnf install -y --setopt=install_weak_deps=False --disablerepo=fedora-cisco-openh264 \
       nodejs git gcc gcc-c++ rust cargo rustfmt clippy \
-      gtk4-devel libadwaita-devel vte291-gtk4-devel \
+      gtk4-devel libadwaita-devel vte291-gtk4-devel tmux \
  && dnf clean all
