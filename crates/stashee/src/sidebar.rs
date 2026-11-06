@@ -128,7 +128,13 @@ impl Sidebar {
             }
             let row = gtk::ListBoxRow::new();
             row.set_child(Some(&content));
-            row.set_tooltip_text(Some(&display_dir(&workflow.default_dir)));
+            // Long names are ellipsized; the tooltip has the whole name
+            // and the folder new panes open in.
+            row.set_tooltip_text(Some(&format!(
+                "{}\n{}",
+                workflow.name,
+                display_dir(&workflow.default_dir)
+            )));
             attach_menu(&row, &workflow.name, workflow.stash);
             attach_pane_drop(&row, &workflow.name, &self.pane_drop);
             self.list.append(&row);
