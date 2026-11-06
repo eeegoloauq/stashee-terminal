@@ -7,7 +7,7 @@ A tiling terminal for Linux that keeps your shells running after you close it.
 [![AUR version](https://img.shields.io/aur/version/stashee?label=AUR)](https://aur.archlinux.org/packages/stashee)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-![stashee on first launch](docs/shots/first-run.png)
+![Two coding agents in one stashed workflow](docs/shots/agents.png)
 
 - Named workflows survive quitting, crashes and updates
 - Panes tile automatically, no layout to manage

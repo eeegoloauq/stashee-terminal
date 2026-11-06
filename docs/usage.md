@@ -2,13 +2,13 @@
 
 ## Keys and commands
 
-| | |
+| Key or command | Action |
 |---|---|
 | `stashee work` | open the "work" workflow from any shell |
 | `Ctrl+T` | new pane |
 | `Ctrl+Shift+T` | new SSH pane |
 | `Alt+1…9` | switch workflow |
-| `Ctrl+W` | close pane (the only way to end one) |
+| `Ctrl+Shift+W` | close pane; asks first if something is running |
 | `Ctrl+Shift+V` | paste; a clipboard image becomes a file path, uploaded first on SSH panes |
 | `stashee config` | open the config file; changes apply live ([all options](config.toml.example)) |
 
