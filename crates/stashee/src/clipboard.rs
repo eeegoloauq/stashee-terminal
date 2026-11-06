@@ -9,6 +9,7 @@
 //! connection per copy, the payload is the bytes until EOF.
 
 use std::io::Read;
+use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::time::Duration;
 
@@ -29,14 +30,17 @@ const READ_TIMEOUT: Duration = Duration::from_secs(2);
 /// single-instance guarantee means no other live listener exists.
 /// On failure the app still runs; copies are lost and the loss is
 /// logged.
+///
+/// Whoever can connect can set the clipboard, and clipboard text ends
+/// up pasted into shells — so only this user may connect: the socket
+/// sits in an owner-only directory, is itself owner-only, and every
+/// connection's peer uid is checked.
 pub fn serve() {
-    let path = paths::clipboard_socket();
-    if let Some(parent) = path.parent()
-        && let Err(err) = std::fs::create_dir_all(parent)
-    {
-        tracing::error!("clipboard socket dir failed, copies will not land: {err}");
+    if let Err(err) = paths::private_runtime_dir() {
+        tracing::error!("clipboard socket dir failed, copies will not land: {err:#}");
         return;
     }
+    let path = paths::clipboard_socket();
     let _ = std::fs::remove_file(&path);
     let listener = match UnixListener::bind(&path) {
         Ok(listener) => listener,
@@ -45,6 +49,10 @@ pub fn serve() {
             return;
         }
     };
+    if let Err(err) = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)) {
+        tracing::error!("cannot restrict the clipboard socket, copies will not land: {err}");
+        return;
+    }
     std::thread::spawn(move || {
         for connection in listener.incoming() {
             match connection {
@@ -56,6 +64,19 @@ pub fn serve() {
 }
 
 fn receive(stream: UnixStream) {
+    // The file permissions already keep other users out; the kernel's
+    // record of who connected makes that a check, not an assumption.
+    match stashee_pty::peer_uid(&stream) {
+        Ok(uid) if uid == stashee_pty::current_uid() => {}
+        Ok(uid) => {
+            tracing::warn!("clipboard: refused a copy from uid {uid}");
+            return;
+        }
+        Err(err) => {
+            tracing::warn!("clipboard: cannot identify the peer, copy refused: {err}");
+            return;
+        }
+    }
     if let Err(err) = stream.set_read_timeout(Some(READ_TIMEOUT)) {
         tracing::warn!("clipboard receive failed: {err}");
         return;

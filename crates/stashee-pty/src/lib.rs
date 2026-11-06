@@ -9,7 +9,7 @@
 
 use std::ffi::OsString;
 use std::io;
-use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
+use std::os::fd::{AsFd, AsRawFd, FromRawFd, OwnedFd};
 use std::os::unix::process::CommandExt;
 use std::process::{Child, Command, Stdio};
 
@@ -25,6 +25,42 @@ pub fn trim_malloc() {
     unsafe {
         libc::malloc_trim(0);
     }
+}
+
+/// The uid of the process on the other end of a connected unix
+/// socket (`SO_PEERCRED`, recorded by the kernel at connect time, so
+/// the peer cannot forge it). Std's `UnixStream::peer_cred` is still
+/// unstable.
+pub fn peer_uid(socket: &impl AsFd) -> io::Result<u32> {
+    let mut cred = libc::ucred {
+        pid: 0,
+        uid: 0,
+        gid: 0,
+    };
+    let mut len = libc::socklen_t::try_from(std::mem::size_of::<libc::ucred>())
+        .map_err(|_| io::Error::other("ucred size overflows socklen_t"))?;
+    // SAFETY: `cred` is a properly sized and aligned ucred that
+    // outlives the call, and `len` tells getsockopt its exact size.
+    let result = unsafe {
+        libc::getsockopt(
+            socket.as_fd().as_raw_fd(),
+            libc::SOL_SOCKET,
+            libc::SO_PEERCRED,
+            std::ptr::from_mut(&mut cred).cast::<libc::c_void>(),
+            &mut len,
+        )
+    };
+    if result != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(cred.uid)
+}
+
+/// This process's real uid.
+#[must_use]
+pub fn current_uid() -> u32 {
+    // SAFETY: getuid(2) has no preconditions and cannot fail.
+    unsafe { libc::getuid() }
 }
 
 /// Open a pty sized like our stdin and spawn `argv` on its slave side,
@@ -202,6 +238,12 @@ mod tests {
 
     use super::*;
     use std::io::Read;
+
+    #[test]
+    fn a_socket_pair_peer_is_this_user() {
+        let (ours, _theirs) = std::os::unix::net::UnixStream::pair().unwrap();
+        assert_eq!(peer_uid(&ours).unwrap(), current_uid());
+    }
 
     /// The proxy blocks SIGWINCH before spawning, and the mask
     /// survives exec — the child must start with a clean mask, or ssh

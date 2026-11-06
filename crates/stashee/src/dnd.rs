@@ -187,7 +187,7 @@ fn quote_for_prompt(path: &str) -> String {
 /// Clipboard image → PNG in the runtime dir (the session's tmpfs, so
 /// leftovers vanish at logout, never at a moment the path is in use).
 fn save_png(texture: &gdk::Texture) -> anyhow::Result<PathBuf> {
-    let dir = paths::paste_dir();
+    let dir = paths::paste_dir()?;
     std::fs::create_dir_all(&dir)?;
     let path = dir.join(format!("paste-{}.png", unique_suffix()));
     std::fs::write(&path, texture.save_to_png_bytes())?;
