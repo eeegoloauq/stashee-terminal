@@ -23,21 +23,34 @@ Security issues don't belong in the issue tracker — see [SECURITY.md](SECURITY
 
 ## Development setup
 
-You need Rust (the toolchain is pinned in `rust-toolchain.toml`), tmux, and
+You need Rust 1.97 or newer (`rust-toolchain.toml` selects stable), tmux, and
 the GTK stack:
 
 ```sh
 # Fedora
-sudo dnf install gcc rust cargo gtk4-devel libadwaita-devel vte291-gtk4-devel tmux
+sudo dnf install gcc gcc-c++ rust cargo just gtk4-devel libadwaita-devel vte291-gtk4-devel tmux
 # Arch
-sudo pacman -S --needed rust gtk4 libadwaita vte4 tmux
+sudo pacman -S --needed rust just gtk4 libadwaita vte4 tmux
 
 git clone https://github.com/eeegoloauq/stashee-terminal && cd stashee-terminal
 cargo build --workspace
 ```
 
-The workspace has three crates: `stashee` (the GTK app), `stashee-core`
-(workflow/state logic), and `stashee-pty` (tmux integration).
+`just install` builds a release binary and installs it for your user
+(`~/.local/bin/stashee`, plus the desktop entry and icons); `just uninstall`
+removes it.
+
+Stashee is Rust, GTK4, libadwaita and VTE (the terminal engine of GNOME
+Terminal and Ptyxis), with no webview. The workspace has four crates:
+
+- `stashee`: the GTK app.
+- `stashee-core`: workflows, tiling math, the tmux/ssh command model and saved
+  state. No UI toolkit; most tests live here.
+- `stashee-pty`: the only crate allowed `unsafe`: pty plumbing for the OSC 52
+  clipboard proxy.
+- `stashee-voice`: experimental dictation (PipeWire capture, local Parakeet
+  speech recognition). `--no-default-features` builds without the speech
+  engine.
 
 ## Before you push
 

@@ -2,8 +2,9 @@
 
 Stashee is a native Linux terminal for people who keep related shells in named,
 tiled workflows. tmux owns persistent sessions: closing the app leaves stashed
-shells running, and reopening restores them. See [product behavior](docs/SPEC.md)
-and [architecture](docs/ARCHITECTURE.md) where those local docs are available.
+shells running, and reopening restores them. How it works:
+[docs/internals.md](docs/internals.md). Product behavior: `docs/SPEC.md` where
+that local doc is available.
 
 ## Decisions and gotchas
 
@@ -14,10 +15,10 @@ and [architecture](docs/ARCHITECTURE.md) where those local docs are available.
   saved state supplies ordering and SSH targets.
 - Fedora and GNOME/Wayland are the primary desktop target. Voice input is
   already present as an experimental, opt-in feature.
-- `stashee` is the binary; `st` is an optional install-time symlink and may
-  conflict with another terminal. tmux is required at runtime.
-- `docs/SPEC.md` and `docs/ARCHITECTURE.md` are local symlinks outside the
-  tracked tree; do not assume they are present in every clone.
+- `stashee` is the binary. tmux is required at runtime.
+- `docs/SPEC.md` and `docs/ARCHITECTURE.md` are local symlinks into private
+  notes, absent from other clones. `docs/internals.md` is the tracked
+  architecture doc; update it when behavior or structure changes.
 
 ## Commands
 
