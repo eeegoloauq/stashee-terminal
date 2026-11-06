@@ -182,6 +182,15 @@ the same thin-client pattern as tmux and ssh.
   config, OSC 52 parsing, the close guard, voice helpers.
 - `stashee-core/tests/tmux_roundtrip.rs` drives a real tmux on a private
   `TMUX_TMPDIR` (skipped without tmux).
+- `stashee/tests/stash.rs` runs the real binary under `xvfb-run` and
+  `dbus-run-session` in a private HOME and tmux dir: start, kill the app's
+  process group, check the shell survived, start again, check it reattached.
+  Skipped without those tools unless `STASHEE_E2E=require` (CI sets it).
+  Signal process groups through `stashee_pty::terminate_group`, never a `kill`
+  command: procps-ng 4.0.4 turns `kill -TERM -<pgid>` into a signal to every
+  process.
+- `stashee/tests/packaging.rs` keeps the COPR spec and metainfo versions equal
+  to Cargo's; CI also runs `desktop-file-validate` and `appstreamcli validate`.
 - Voice engine, by hand: `cargo run -p stashee-voice --example transcribe --
   <model-dir> <audio.raw>` (16 kHz mono s16le).
 - Before a release, by hand: five panes across two workflows (one SSH), quit,
