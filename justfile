@@ -20,12 +20,10 @@ fmt:
 fmt-check:
     cargo fmt --all --check
 
-# release build + user-level install: binary, .desktop, icon, `st` symlink
-# (symlink skipped if an `st` already exists — suckless terminal collides)
+# release build + user-level install: binary, .desktop, icons, metainfo
 install:
     cargo build --release --workspace
     install -Dm755 target/release/stashee ~/.local/bin/stashee
-    [ -e ~/.local/bin/st ] || ln -s stashee ~/.local/bin/st
     install -Dm644 crates/stashee/data/dev.stashee.Terminal.desktop ~/.local/share/applications/dev.stashee.Terminal.desktop
     install -Dm644 crates/stashee/data/dev.stashee.Terminal.svg ~/.local/share/icons/hicolor/scalable/apps/dev.stashee.Terminal.svg
     for s in 64 128 256; do install -Dm644 crates/stashee/data/dev.stashee.Terminal-$s.png ~/.local/share/icons/hicolor/${s}x${s}/apps/dev.stashee.Terminal.png; done
@@ -36,10 +34,6 @@ install:
 # tag — the tag message (from notes.md, or $EDITOR) is the release notes
 release version notes="":
     scripts/release.sh {{version}} {{notes}}
-
-# after main + tag are on GitHub: update the AUR checksum and commit
-release-aur:
-    scripts/release.sh aur
 
 uninstall:
     rm -f ~/.local/bin/stashee
