@@ -22,9 +22,11 @@ use stashee_core::state::State;
 use stashee_core::{ssh, tmux};
 
 mod panes;
+mod sessions;
 mod workflows;
 
 use panes::*;
+use sessions::*;
 use workflows::*;
 
 use crate::cli;

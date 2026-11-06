@@ -79,35 +79,8 @@ pub(super) fn move_pane_to_workflow(ctx: &Rc<Ctx>, id: &str, target: &str) {
 
     let from = tmux::session_name(&source, id);
     let to = tmux::session_name(target, id);
-    if from != to {
-        let stashed = stashed_pane_ids(ctx, &source).contains(&spec.id);
-        match &spec.kind {
-            PaneKind::Local if stashed => {
-                // synchronous like workflow rename: local tmux answers
-                // instantly and a failed rename must not pass silently
-                let argv = tmux::rename_session_argv(&from, &to);
-                match Command::new(&argv[0]).args(&argv[1..]).output() {
-                    Ok(out) if out.status.success() => {}
-                    Ok(out) => {
-                        let stderr = String::from_utf8_lossy(&out.stderr);
-                        tracing::error!("moving {from}: {}", stderr.trim());
-                        toast(ctx, "Could not rename the pane's tmux session");
-                        return;
-                    }
-                    Err(err) => {
-                        tracing::error!("moving {from}: {err}");
-                        toast(ctx, "Could not rename the pane's tmux session");
-                        return;
-                    }
-                }
-            }
-            PaneKind::Local => {} // plain shell: no session to rename
-            PaneKind::Ssh { host, .. } => run_detached(
-                ctx,
-                ssh::rename_remote_argv(host, &from, &to),
-                "Could not rename the remote session",
-            ),
-        }
+    if from != to && !rename_sessions(ctx, &[session_rename(ctx, &spec, from, to)]) {
+        return;
     }
 
     {
@@ -139,9 +112,7 @@ pub(super) fn move_pane_to_workflow(ctx: &Rc<Ctx>, id: &str, target: &str) {
         if view.focused.as_deref() == Some(id) {
             view.focused = None;
         }
-        let pane = view.panes.remove(pos);
-        *pane.session.borrow_mut() = to;
-        pane
+        view.panes.remove(pos)
     };
     // source first: its grid unparents the widget, then the target's
     // grid adopts it — the pane (and its running client) never respawns

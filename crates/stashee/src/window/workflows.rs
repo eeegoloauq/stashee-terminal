@@ -128,40 +128,18 @@ fn apply_rename(ctx: &Rc<Ctx>, old: &str, new: &str) {
         return;
     };
 
-    // Sessions follow the name (SPEC "Workflows"), otherwise the next
-    // start would attach to fresh sessions and orphan the old ones.
-    // Per-pane mode, not the workflow toggle: a pane built stashed
-    // keeps a session that must follow the rename.
-    let stashed_ids = stashed_pane_ids(ctx, old);
     if tmux::sanitize(old) != tmux::sanitize(new) {
-        for spec in &workflow.panes {
-            let from = tmux::session_name(old, &spec.id);
-            let to = tmux::session_name(new, &spec.id);
-            match &spec.kind {
-                PaneKind::Local if stashed_ids.contains(&spec.id) => {
-                    // synchronous on purpose: local tmux answers
-                    // instantly and a failed rename must not pass silently
-                    let argv = tmux::rename_session_argv(&from, &to);
-                    match Command::new(&argv[0]).args(&argv[1..]).output() {
-                        Ok(out) if out.status.success() => {}
-                        Ok(out) => {
-                            let stderr = String::from_utf8_lossy(&out.stderr);
-                            tracing::error!("renaming {from}: {}", stderr.trim());
-                            toast(ctx, "Could not rename a pane's tmux session");
-                        }
-                        Err(err) => {
-                            tracing::error!("renaming {from}: {err}");
-                            toast(ctx, "Could not rename a pane's tmux session");
-                        }
-                    }
-                }
-                PaneKind::Local => {}
-                PaneKind::Ssh { host, .. } => run_detached(
-                    ctx,
-                    ssh::rename_remote_argv(host, &from, &to),
-                    "Could not rename a remote session",
-                ),
-            }
+        let renames: Vec<_> = workflow
+            .panes
+            .iter()
+            .map(|spec| {
+                let from = tmux::session_name(old, &spec.id);
+                let to = tmux::session_name(new, &spec.id);
+                session_rename(ctx, spec, from, to)
+            })
+            .collect();
+        if !rename_sessions(ctx, &renames) {
+            return;
         }
     }
 
@@ -179,12 +157,6 @@ fn apply_rename(ctx: &Rc<Ctx>, old: &str, new: &str) {
         && let Some(view) = ctx.views.borrow_mut().get_mut(index)
     {
         view.name = new.to_owned();
-        // live panes must learn the new session names: an SSH pane's
-        // reconnect attaches by name, and a stale one would recreate
-        // the old session on the remote
-        for pane in &view.panes {
-            *pane.session.borrow_mut() = tmux::session_name(new, &pane.id);
-        }
     }
     if ctx.active.borrow().eq_ignore_ascii_case(old) {
         *ctx.active.borrow_mut() = new.to_owned();
@@ -195,7 +167,7 @@ fn apply_rename(ctx: &Rc<Ctx>, old: &str, new: &str) {
 }
 
 /// Ids of `workflow`'s panes that run inside tmux, per the live view.
-pub(super) fn stashed_pane_ids(ctx: &Rc<Ctx>, workflow: &str) -> Vec<String> {
+fn stashed_pane_ids(ctx: &Rc<Ctx>, workflow: &str) -> Vec<String> {
     let views = ctx.views.borrow();
     views
         .iter()

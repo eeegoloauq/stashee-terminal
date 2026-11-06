@@ -47,6 +47,8 @@ crates/
                     sidebar and title sync, save
     window/panes.rs add, remove, close, swap, move, the SSH host dialog
     window/workflows.rs  create, rename, stash toggle, folder, delete
+    window/sessions.rs   sessions follow names: all-or-nothing local
+                         renames, then remote ones
     close_guard.rs  is the pane busy? (tmux, ssh, /proc)
     pane.rs         Pane widget: VTE terminal, spawn, SSH reconnect
     grid.rs         TilingGrid: animated tiling
@@ -55,7 +57,8 @@ crates/
     shortcuts.rs    the Keyboard Shortcuts dialog, built from live config
     settings.rs     runtime backdrop opacity, config.toml live reload
     proxy.rs        --osc52-proxy: pty relay wrapping every pane
-    clipboard.rs    socket receiving the proxy's OSC 52 copies
+    clipboard.rs    socket receiving the proxy's OSC 52 copies (0700 dir,
+                    0600 socket, peer uid checked)
     dnd.rs          file drops and image pastes become typed paths (scp first
                     on SSH panes)
     voice.rs        record toggle, the waveform pill, model download consent
