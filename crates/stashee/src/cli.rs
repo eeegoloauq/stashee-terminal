@@ -16,36 +16,9 @@ use crate::paths;
 const RESET: &str = "\x1b[0m";
 const DIM: &str = "\x1b[2m";
 const ACCENT: &str = "\x1b[38;2;153;193;241m";
+const BOLD: &str = "\x1b[1m";
 
-/// The wordmark, one gradient step per line.
-const LOGO: [(&str, &str); 6] = [
-    (
-        "\x1b[38;2;199;216;245m",
-        "███████╗████████╗ █████╗ ███████╗██╗  ██╗███████╗███████╗",
-    ),
-    (
-        "\x1b[38;2;175;199;242m",
-        "██╔════╝╚══██╔══╝██╔══██╗██╔════╝██║  ██║██╔════╝██╔════╝",
-    ),
-    (
-        "\x1b[38;2;151;182;240m",
-        "███████╗   ██║   ███████║███████╗███████║█████╗  █████╗  ",
-    ),
-    (
-        "\x1b[38;2;127;165;237m",
-        "╚════██║   ██║   ██╔══██║╚════██║██╔══██║██╔══╝  ██╔══╝  ",
-    ),
-    (
-        "\x1b[38;2;103;148;234m",
-        "███████║   ██║   ██║  ██║███████║██║  ██║███████╗███████╗",
-    ),
-    (
-        "\x1b[38;2;85;136;221m",
-        "╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝",
-    ),
-];
-
-const TAGLINE: &str = "a tiling terminal workspace — shells never die by accident";
+const TAGLINE: &str = "a Linux terminal that keeps your shells running after you close it";
 
 const KEYS: [(&str, &str); 6] = [
     ("Ctrl+T", "new pane — the grid tiles itself"),
@@ -53,7 +26,10 @@ const KEYS: [(&str, &str); 6] = [
         "Ctrl+Shift+T",
         "new SSH pane (survives reboots; plain ssh won't)",
     ),
-    ("Ctrl+W", "close pane (kills its shell)"),
+    (
+        "Ctrl+Shift+W",
+        "close pane (asks first if something is running)",
+    ),
     ("Alt+1…9", "switch workflow"),
     ("Alt+Arrows", "move focus between panes"),
     (
@@ -69,8 +45,7 @@ const COMMANDS: [(&str, &str); 4] = [
     ("stashee config", "every setting, one file, applied live"),
 ];
 
-/// The keys and commands blocks shared by the first-run greeting and
-/// `stashee help` — one source, so the two can never drift apart.
+/// The keys and commands blocks of `stashee help`.
 fn cribsheet(color: bool) -> String {
     let (accent, reset) = if color { (ACCENT, RESET) } else { ("", "") };
     let mut out = String::new();
@@ -94,13 +69,13 @@ pub fn usage() -> String {
     out
 }
 
-/// `stashee help` / `--help`: the greeting minus the wordmark.
+/// `stashee help` / `--help`: every key and command.
 /// `color` should be whether stdout is a terminal — help gets piped.
 pub fn help_text(color: bool) -> String {
     format!(
         "stashee {}\n{TAGLINE}\n\n{}\n  \
-         Closing the window stashes everything: each shell keeps\n  \
-         running and comes back right where it was.\n",
+         Closing the window keeps every shell running; reopening\n  \
+         brings them back where they were.\n",
         env!("CARGO_PKG_VERSION"),
         cribsheet(color)
     )
@@ -114,18 +89,18 @@ pub fn welcome() -> glib::ExitCode {
     glib::ExitCode::SUCCESS
 }
 
+/// Short on purpose: one promise the user can test right away, three
+/// keys, and the way to the rest. Every line fits a pane in a
+/// three-column split (the greeting stays in scrollback at any width).
 fn greeting() -> String {
-    let mut out = String::from("\n");
-    for (color, line) in LOGO {
-        out.push_str(&format!("  {color}{line}{RESET}\n"));
-    }
-    out.push_str(&format!("\n  {DIM}{TAGLINE}{RESET}\n\n"));
-    out.push_str(&cribsheet(true));
-    out.push_str(
-        "\n  Closing the window stashes everything: each shell — this one\n  \
-         included — keeps running and comes back right where it was.\n\n",
-    );
-    out
+    let version = env!("CARGO_PKG_VERSION");
+    format!(
+        "\n  {BOLD}{ACCENT}stashee{RESET} {DIM}{version}{RESET}\n\n  \
+         Close this window. This shell keeps\n  \
+         running and will be here when you reopen.\n\n  \
+         {ACCENT}Ctrl+T{RESET} new pane   {ACCENT}Ctrl+Shift+W{RESET} close\n  \
+         {ACCENT}Alt+1…9{RESET} workflows {DIM}· stashee help{RESET}\n\n"
+    )
 }
 
 /// `stashee config`: open the config (created from the commented
@@ -240,24 +215,40 @@ mod tests {
         assert_eq!(render(&[]), "no workflows\n");
     }
 
-    #[test]
-    fn greeting_covers_the_whole_cribsheet() {
-        let text = greeting();
-        for (key, what) in KEYS.iter().chain(&COMMANDS) {
-            assert!(text.contains(key), "missing key {key:?}");
-            assert!(text.contains(what), "missing description {what:?}");
+    /// Visible width: ANSI escapes stripped, characters counted.
+    fn visible_width(line: &str) -> usize {
+        let mut width = 0;
+        let mut in_escape = false;
+        for ch in line.chars() {
+            match (in_escape, ch) {
+                (false, '\x1b') => in_escape = true,
+                (true, 'm') => in_escape = false,
+                (true, _) => {}
+                (false, _) => width += 1,
+            }
         }
+        width
     }
 
     #[test]
-    fn help_text_is_the_greeting_minus_the_wordmark() {
+    fn greeting_fits_a_three_column_split() {
+        let text = greeting();
+        assert!(text.lines().count() <= 10, "greeting grew: {text}");
+        for line in text.lines() {
+            assert!(visible_width(line) <= 44, "too wide: {line:?}");
+        }
+        assert!(text.contains("stashee help"));
+        assert!(text.contains("Close this window"));
+    }
+
+    #[test]
+    fn help_text_lists_every_key_and_command_without_color() {
         let text = help_text(false);
         for (key, what) in KEYS.iter().chain(&COMMANDS) {
             assert!(text.contains(key), "missing key {key:?}");
             assert!(text.contains(what), "missing description {what:?}");
         }
         assert!(!text.contains('\x1b'), "plain help must carry no ANSI");
-        assert!(!text.contains('█'), "help must not include the wordmark");
     }
 
     #[test]

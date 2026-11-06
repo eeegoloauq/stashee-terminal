@@ -2,6 +2,7 @@
 
 mod cli;
 mod clipboard;
+mod close_guard;
 mod dnd;
 mod grid;
 mod keys;
@@ -73,6 +74,9 @@ fn main() -> glib::ExitCode {
     // Startup runs only in the primary instance — exactly one
     // clipboard listener, like the window itself.
     app.connect_startup(|_| {
+        // The glass tokens and the terminal palette are dark-only: under
+        // a light system scheme libadwaita would draw dark text on them.
+        adw::StyleManager::default().set_color_scheme(adw::ColorScheme::ForceDark);
         load_css();
         clipboard::serve();
     });

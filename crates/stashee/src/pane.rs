@@ -56,7 +56,7 @@ pub struct Pane {
     /// reattach — the pane is effectively not stashed.
     pub ssh_fallback: Rc<Cell<bool>>,
     /// Set while an SSH pane's transport is down and a reattach is
-    /// pending: there is no live client, so `Ctrl+W` cannot rely on a
+    /// pending: there is no live client, so close-pane cannot rely on a
     /// client exit to drive the removal.
     pub reconnecting: Rc<Cell<bool>>,
     /// pid of the pane's direct child (the OSC 52 proxy, or the bare
@@ -70,7 +70,7 @@ pub struct Pane {
 
 /// Shared by all panes: `on_exited` fires when the pane's process ends
 /// (tmux client exit = session ended — one code path, see
-/// ARCHITECTURE.md); `on_focus` tracks which pane `Ctrl+W` acts on.
+/// ARCHITECTURE.md); `on_focus` tracks which pane close-pane acts on.
 pub struct Callbacks {
     pub on_exited: Rc<dyn Fn(&str)>,
     pub on_focus: Rc<dyn Fn(&str)>,

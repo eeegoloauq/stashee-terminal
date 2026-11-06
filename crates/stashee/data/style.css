@@ -22,6 +22,15 @@ window.stashee .sidebar-panel list {
   background: transparent;
 }
 
+/* "plain" badge on a sidebar row: a workflow with stashing off. */
+.workflow-tag {
+  font-size: 0.75em;
+  color: rgba(249, 240, 107, 0.85);
+  border: 1px solid rgba(249, 240, 107, 0.35);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
 .pane {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;

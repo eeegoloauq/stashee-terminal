@@ -150,11 +150,22 @@ pub fn shell_quote(text: &str) -> String {
     format!("'{}'", text.replace('\'', r"'\''"))
 }
 
-/// argv to kill one session (used by `Ctrl+W`; the resulting client
+/// argv to kill one session (used by close-pane; the resulting client
 /// exit drives the UI update — one code path).
 #[must_use]
 pub fn kill_session_argv(session: &str) -> Vec<String> {
     socket_argv(&["kill-session", "-t", session])
+}
+
+/// tmux format naming a pane's foreground command: the shell (`bash`)
+/// at an idle prompt, the program (`vim`, `cargo`) while one runs.
+pub const CURRENT_COMMAND: &str = "#{pane_current_command}";
+
+/// argv printing the foreground command of a session's active pane —
+/// asked before closing, so a running program is never killed unasked.
+#[must_use]
+pub fn current_command_argv(session: &str) -> Vec<String> {
+    socket_argv(&["display-message", "-p", "-t", session, CURRENT_COMMAND])
 }
 
 /// argv to rename a session (workflow rename keeps sessions in step).
@@ -223,6 +234,23 @@ pub fn parse_session_list(output: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn current_command_asks_our_socket_for_the_active_pane() {
+        assert_eq!(
+            current_command_argv("stashee-dev-ab12"),
+            [
+                "tmux",
+                "-L",
+                "stashee",
+                "display-message",
+                "-p",
+                "-t",
+                "stashee-dev-ab12",
+                "#{pane_current_command}",
+            ]
+        );
+    }
 
     #[test]
     fn sanitize_keeps_simple_names() {

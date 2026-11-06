@@ -204,7 +204,7 @@ pub fn rename_remote_argv(host: &str, old: &str, new: &str) -> Vec<String> {
     remote_tmux_argv(host, &["rename-session", "-t", old, new])
 }
 
-/// argv to kill a remote session (`Ctrl+W` on an SSH pane); the
+/// argv to kill a remote session (close-pane on an SSH pane); the
 /// remote session ending makes the local ssh client exit, which drives
 /// the UI update — the same code path as local panes.
 #[must_use]
@@ -212,9 +212,36 @@ pub fn kill_remote_argv(host: &str, session: &str) -> Vec<String> {
     remote_tmux_argv(host, &["kill-session", "-t", session])
 }
 
+/// argv printing the foreground command of a remote session's active
+/// pane (see `tmux::current_command_argv`). ssh hands the words to the
+/// remote shell, where an unquoted `#` would start a comment.
+#[must_use]
+pub fn remote_current_command_argv(host: &str, session: &str) -> Vec<String> {
+    let format = crate::tmux::shell_quote(crate::tmux::CURRENT_COMMAND);
+    remote_tmux_argv(host, &["display-message", "-p", "-t", session, &format])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn remote_current_command_quotes_the_format_for_the_remote_shell() {
+        let argv = remote_current_command_argv("dev", "stashee-dev-ab12");
+        assert_eq!(argv.first().map(String::as_str), Some("ssh"));
+        assert!(argv.contains(&"BatchMode=yes".to_owned()));
+        assert_eq!(
+            argv[argv.len() - 6..],
+            [
+                "tmux",
+                "display-message",
+                "-p",
+                "-t",
+                "stashee-dev-ab12",
+                "'#{pane_current_command}'",
+            ]
+        );
+    }
 
     #[test]
     fn remote_attach_argv_matches_spec() {

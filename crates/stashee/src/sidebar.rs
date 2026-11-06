@@ -102,14 +102,32 @@ impl Sidebar {
     /// selected row.
     pub fn refresh(&self, workflows: &[Workflow], active: &str) {
         self.list.remove_all();
-        for workflow in workflows {
+        for (index, workflow) in workflows.iter().enumerate() {
             let label = gtk::Label::new(Some(&workflow.name));
             label.set_halign(gtk::Align::Start);
+            label.set_hexpand(true);
             label.set_ellipsize(gtk::pango::EllipsizeMode::End);
+            let content = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+            content.append(&label);
+            // Only a workflow whose shells die with the app is marked;
+            // stashing is the default and needs no badge.
+            if !workflow.stash {
+                let tag = gtk::Label::new(Some("plain"));
+                tag.add_css_class("workflow-tag");
+                tag.set_valign(gtk::Align::Center);
+                tag.set_tooltip_text(Some("Not stashed: shells end when the app closes"));
+                content.append(&tag);
+            }
+            // Alt+1…9 follows list order; show the slot it answers to.
+            if index < 9 {
+                let slot = gtk::Label::new(Some(&(index + 1).to_string()));
+                slot.add_css_class("dim-label");
+                slot.add_css_class("numeric");
+                slot.set_tooltip_text(Some(&format!("Alt+{}", index + 1)));
+                content.append(&slot);
+            }
             let row = gtk::ListBoxRow::new();
-            row.set_child(Some(&label));
-            // the folder is otherwise invisible — it is only ever set
-            // through the context menu's folder picker
+            row.set_child(Some(&content));
             row.set_tooltip_text(Some(&display_dir(&workflow.default_dir)));
             attach_menu(&row, &workflow.name, workflow.stash);
             attach_pane_drop(&row, &workflow.name, &self.pane_drop);
@@ -180,7 +198,8 @@ fn action_item(label: &str, action: &str, workflow: &str) -> gio::MenuItem {
     item
 }
 
-fn display_dir(dir: &Path) -> String {
+/// `~`-relative, as shown in the header subtitle and row tooltips.
+pub fn display_dir(dir: &Path) -> String {
     match dir.strip_prefix(glib::home_dir()) {
         Ok(rest) if rest.as_os_str().is_empty() => "~".to_owned(),
         Ok(rest) => format!("~/{}", rest.display()),

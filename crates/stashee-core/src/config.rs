@@ -124,7 +124,7 @@ impl Default for Keys {
         Self {
             new_pane: "<Ctrl>t".to_owned(),
             new_ssh_pane: "<Ctrl><Shift>t".to_owned(),
-            close_pane: "<Ctrl>w".to_owned(),
+            close_pane: "<Ctrl><Shift>w".to_owned(),
             focus_left: "<Alt>Left".to_owned(),
             focus_right: "<Alt>Right".to_owned(),
             focus_up: "<Alt>Up".to_owned(),
@@ -168,7 +168,7 @@ impl Config {
 ## disable it. Alt+1..9 (switch to the n-th workflow) is fixed.
 # new_pane = \"<Ctrl>t\"
 # new_ssh_pane = \"<Ctrl><Shift>t\"
-# close_pane = \"<Ctrl>w\"
+# close_pane = \"<Ctrl><Shift>w\"
 # focus_left = \"<Alt>Left\"
 # focus_right = \"<Alt>Right\"
 # focus_up = \"<Alt>Up\"
