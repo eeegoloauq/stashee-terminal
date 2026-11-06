@@ -43,6 +43,7 @@ jobs:
           git config --global --add safe.directory "$PWD"
           git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
           git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > "$RUNNER_TEMP/notes.md"
+          cat packaging/release-install.md >> "$RUNNER_TEMP/notes.md"
       - name: Attach RPM to the GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -86,6 +87,7 @@ jobs:
           git config --global --add safe.directory "$PWD"
           git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
           git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > "$RUNNER_TEMP/notes.md"
+          cat packaging/release-install.md >> "$RUNNER_TEMP/notes.md"
       - name: Attach package to the GitHub release
         uses: softprops/action-gh-release@v2
         with:
