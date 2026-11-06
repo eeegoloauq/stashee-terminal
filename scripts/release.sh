@@ -8,8 +8,8 @@
 #       bump everything, run the gate, commit, tag. The annotated tag's
 #       message is the release notes: Forgejo shows it on the releases
 #       page, the GitHub workflow copies it into the release body.
-#       Without a notes file, $EDITOR opens. One summary line, blank
-#       line, then plain bullets.
+#       Without a notes file, $EDITOR opens. A one-line headline, a blank
+#       line, then ## Added / Improved / Fixed / Removed sections.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -41,7 +41,9 @@ fi
 git add Cargo.toml Cargo.lock "$copr_spec" "$metainfo"
 git commit -m "stashee v$ver"
 if [ -n "$notes" ]; then
-  git tag -a "v$ver" -F "$notes"
+  # verbatim: the default cleanup strips "## Added" and the other
+  # section headings as comment lines
+  git tag -a "v$ver" --cleanup=verbatim -F "$notes"
 else
   git tag -a "v$ver"
 fi
