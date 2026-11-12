@@ -23,7 +23,7 @@ Security issues don't belong in the issue tracker — see [SECURITY.md](SECURITY
 
 ## Development setup
 
-You need Rust 1.97 or newer (`rust-toolchain.toml` selects stable), tmux, and
+You need Rust 1.97 or newer ([`rust-toolchain.toml`](rust-toolchain.toml) selects stable), tmux, and
 the GTK stack:
 
 ```sh
@@ -43,12 +43,12 @@ removes it.
 Stashee is Rust, GTK4, libadwaita and VTE (the terminal engine of GNOME
 Terminal and Ptyxis), with no webview. The workspace has four crates:
 
-- `stashee`: the GTK app.
-- `stashee-core`: workflows, tiling math, the tmux/ssh command model and saved
+- [`stashee`](crates/stashee): the GTK app.
+- [`stashee-core`](crates/stashee-core): workflows, tiling math, the tmux/ssh command model and saved
   state. No UI toolkit; most tests live here.
-- `stashee-pty`: the only crate allowed `unsafe`: pty plumbing for the OSC 52
+- [`stashee-pty`](crates/stashee-pty): the only crate allowed `unsafe`: pty plumbing for the OSC 52
   clipboard proxy.
-- `stashee-voice`: experimental dictation (PipeWire capture, local Parakeet
+- [`stashee-voice`](crates/stashee-voice): experimental dictation (PipeWire capture, local Parakeet
   speech recognition). `--no-default-features` builds without the speech
   engine.
 
